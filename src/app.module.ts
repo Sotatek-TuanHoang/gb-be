@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-
+import { Module, Logger } from '@nestjs/common';
+import Modules from 'src/modules';
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [...Modules],
+  controllers: [],
+  providers: [Logger],
 })
 export class AppModule {}
