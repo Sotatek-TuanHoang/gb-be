@@ -1,0 +1,22 @@
+app:
+  name: gb-be
+  port: 3000
+  env: development
+  url: 127.0.0.1
+  prefix: api/v1
+
+default:
+  type: mysql
+  host: 'http://127.0.0.1'
+  port: 3307
+  username: admin
+  password: 1
+  database: test
+  logging: true
+  entities:
+    - 'dist/**/*.entity{.ts,.js}'
+
+cron:
+  enable:
+    __name: false
+    __format: json
