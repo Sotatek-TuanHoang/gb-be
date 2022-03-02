@@ -18,7 +18,14 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js --config src/ormconfig.ts",
+    "typeorm:migrate": "npm run typeorm migration:generate -- -n",
+    "typeorm:run": "npm run typeorm migration:run",
+    "typeorm:revert": "npm run typeorm migration:revert",
+    "typeorm:create": "npm run typeorm migration:create -- -n",
+    "console:dev": "ts-node -r tsconfig-paths/register src/console.ts",
+    "console": "node dist/console.js"
   },
   "dependencies": {
     "@nestjs/common": "7.6.15",
@@ -33,10 +40,12 @@
     "helmet": "^5.0.2",
     "mysql2": "2.3.3",
     "nestjs-console": "^7.0.1",
+    "p-limit": "^4.0.0",
     "reflect-metadata": "0.1.13",
     "rimraf": "3.0.2",
     "rxjs": "6.6.6",
-    "typeorm": "0.2.41"
+    "typeorm": "0.2.41",
+    "wallet-core": "^0.0.6"
   },
   "devDependencies": {
     "@nestjs/cli": "7.6.0",
