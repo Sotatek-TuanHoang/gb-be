@@ -6,19 +6,22 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('crawl_status')
+@Entity('events_log')
 export class CrawlStatus {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  contract_name: string;
-
-  @Column()
-  contract_address: string;
+  from_address: string;
 
   @Column()
   block_number: number;
+
+  @Column()
+  event_name: string;
+
+  @Column()
+  type: string;
 
   @CreateDateColumn()
   created_at: Date;

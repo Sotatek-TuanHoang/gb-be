@@ -37,6 +37,7 @@
     "class-validator": "^0.13.2",
     "config": "3.3.7",
     "dotenv": "14.3.2",
+    "ethers": "^5.5.4",
     "helmet": "^5.0.2",
     "mysql2": "2.3.3",
     "nestjs-console": "^7.0.1",

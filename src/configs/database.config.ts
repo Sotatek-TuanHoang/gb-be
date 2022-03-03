@@ -9,6 +9,7 @@ export interface DatabaseConfig {
   database: string;
   entities: string[];
   logging: boolean;
+
   extra: {
     connectionLimit: 100;
   };
@@ -17,4 +18,5 @@ export interface DatabaseConfig {
 export const defaultConfig = {
   ...getConfig().get<DatabaseConfig>('default'),
   autoLoadEntities: true,
+  synchronize: true,
 };
