@@ -10,6 +10,7 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { ResponseTransformInterceptor } from 'src/shares/interceptors/response.interceptor';
 import { BodyValidationPipe } from 'src/shares/pipes/body.validation.pipe';
 import { AppModule } from 'src/app.module';
+import { CommandModule, CommandService } from 'nestjs-command';
 
 const appPort = config.get<number>('app.port');
 const prefix = config.get<string>('app.prefix');
@@ -25,6 +26,15 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(new BodyValidationPipe());
   app.useStaticAssets(join(__dirname, '..', 'src/static'));
   app.use(helmet());
+
+  try {
+    await app.select(CommandModule).get(CommandService).exec();
+    await app.close();
+  } catch (error) {
+    console.error(error);
+    await app.close();
+    process.exit(1);
+  }
 
   await app.listen(appPort);
 

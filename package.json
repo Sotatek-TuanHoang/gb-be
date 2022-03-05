@@ -40,13 +40,15 @@
     "ethers": "^5.5.4",
     "helmet": "^5.0.2",
     "mysql2": "2.3.3",
+    "nestjs-command": "^3.1.1",
     "nestjs-console": "^7.0.1",
     "p-limit": "^4.0.0",
     "reflect-metadata": "0.1.13",
     "rimraf": "3.0.2",
     "rxjs": "6.6.6",
     "typeorm": "0.2.41",
-    "wallet-core": "^0.0.6"
+    "wallet-core": "^0.0.6",
+    "web3": "^1.7.1"
   },
   "devDependencies": {
     "@nestjs/cli": "7.6.0",

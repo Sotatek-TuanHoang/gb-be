@@ -1,4 +1,4 @@
-export const ABI = [
+const ABI = [
   {
     inputs: [],
     payable: false,
@@ -711,3 +711,4 @@ export const ABI = [
     type: 'function',
   },
 ];
+export default ABI;
