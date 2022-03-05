@@ -4,6 +4,8 @@ import { PoolInfoEntity } from 'src/models/entities/pool-info.entity';
 @EntityRepository(PoolInfoEntity)
 export class PoolInfoRepository extends Repository<PoolInfoEntity> {
   async getPoolInfo(poolId: number): Promise<PoolInfoEntity> {
-    return this.findOne({ id: poolId });
+    const poolInfo = await this.findOne({ id: poolId });
+    const result = poolInfo ? poolInfo : new PoolInfoEntity();
+    return result;
   }
 }

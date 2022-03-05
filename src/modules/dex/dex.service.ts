@@ -25,10 +25,44 @@ export class DexService {
     poolId: number,
     userAddress: string,
     amount: BigNumber,
+    blockNumber: string,
   ): Promise<boolean> {
-    poolId;
-    userAddress;
-    amount;
+    this.updatePool(poolId, blockNumber);
+    const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
+    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
+    if (new BigNumber(userInfo.amount).gt('0')) {
+      this.updateUser(poolId, userAddress, blockNumber);
+    } else {
+      userInfo.last_block = blockNumber;
+      userInfo.reward_debt_1 = '0';
+      userInfo.reward_debt_2 = '0';
+    }
+
+    poolInfo.lp_token_amount = new BigNumber(poolInfo.lp_token_amount)
+      .plus(amount)
+      .toString();
+    userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
+    await this.poolInfoRepo.save(poolInfo);
+    await this.userInfoRepo.save(userInfo);
+    return true;
+  }
+
+  async unstake(
+    poolId: number,
+    userAddress: string,
+    amount: BigNumber,
+    blockNumber: string,
+  ): Promise<boolean> {
+    await this.updatePool(poolId, blockNumber);
+    await this.updateUser(poolId, userAddress, blockNumber);
+    const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
+    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
+    userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
+    poolInfo.lp_token_amount = new BigNumber(poolInfo.lp_token_amount)
+      .minus(amount)
+      .toString();
+    this.poolInfoRepo.save(poolInfo);
+    this.userInfoRepo.save(userInfo);
     return true;
   }
 
@@ -90,14 +124,14 @@ export class DexService {
     return result;
   }
 
-  async updatePool(poolId: number, blockNumber): Promise<boolean> {
+  async updatePool(poolId: number, blockNumber: string): Promise<boolean> {
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     if (blockNumber <= poolInfo.last_reward_block) {
       return true;
     }
 
     if (poolInfo.lp_token_amount == '0') {
-      poolInfo.last_reward_block = blockNumber.toString();
+      poolInfo.last_reward_block = blockNumber;
       await this.poolInfoRepo.save(poolInfo);
       return true;
     }
@@ -136,13 +170,13 @@ export class DexService {
   async updateUser(
     poolId: number,
     userAddress: string,
-    blockNumber: number,
+    blockNumber: string,
   ): Promise<void> {
     const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     userInfo.score = (
       await this.getUserScore(poolId, userAddress, userInfo, blockNumber)
     ).toString();
-    userInfo.last_block = blockNumber.toString();
+    userInfo.last_block = blockNumber;
     this.userInfoRepo.save(userInfo);
   }
 
@@ -150,10 +184,13 @@ export class DexService {
     poolId: number,
     userAddress: string,
     userInfo: UserInfoEntity,
-    blockNumber: number,
+    blockNumber: string,
   ): Promise<BigNumber> {
-    // const userScorePerBlock = await userScorePerBlock(poolId, userAddress, userInfo);
-    const userScorePerBlock = new BigNumber(0);
+    const userScorePerBlock = await this.userScorePerBlock(
+      poolId,
+      userAddress,
+      userInfo,
+    );
     const dataMultiplier = await this.getMultiplier(
       poolId,
       new BigNumber(userInfo.last_block),
@@ -166,5 +203,42 @@ export class DexService {
     return result;
   }
 
-  // async userScorePerBlock()
+  async userScorePerBlock(
+    poolId: number,
+    userAddress: string,
+    userInfo: UserInfoEntity,
+  ): Promise<BigNumber> {
+    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
+    let currentScorePerBlock = new BigNumber(poolInfo.score_per_block);
+    const residuals = new BigNumber(poolInfo.last_reward_block)
+      .minus(poolInfo.start_block)
+      .mod(poolInfo.period);
+    let end = new BigNumber(poolInfo.last_reward_block).minus(residuals);
+    if (new BigNumber(userInfo.last_block).gte(end)) {
+      return currentScorePerBlock;
+    }
+
+    while (
+      end.gt(poolInfo.period) &&
+      end.minus(poolInfo.period).gte(poolInfo.start_block)
+    ) {
+      if (
+        new BigNumber(poolInfo.end_reduce_block).isZero() ||
+        new BigNumber(poolInfo.end_reduce_block).gt(end)
+      ) {
+        currentScorePerBlock = currentScorePerBlock
+          .div(poolInfo.reduction_rate)
+          .multipliedBy(BONE);
+      }
+      if (
+        new BigNumber(userInfo.last_block).lte(end) &&
+        new BigNumber(userInfo.last_block).gt(end.minus(poolInfo.period))
+      ) {
+        return currentScorePerBlock;
+        break;
+      } else {
+        end = end.minus(poolInfo.period);
+      }
+    }
+  }
 }

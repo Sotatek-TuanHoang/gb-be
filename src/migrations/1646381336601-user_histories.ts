@@ -48,7 +48,7 @@ export class userHistories1646381336601 implements MigrationInterface {
             default: 'CURRENT_TIMESTAMP',
           },
           {
-            name: 'update_at',
+            name: 'updated_at',
             type: 'datetime',
             isNullable: false,
             default: 'CURRENT_TIMESTAMP',

@@ -71,7 +71,7 @@ export class userInfos1646365218108 implements MigrationInterface {
             default: 'CURRENT_TIMESTAMP',
           },
           {
-            name: 'update_at',
+            name: 'updated_at',
             type: 'datetime',
             isNullable: false,
             default: 'CURRENT_TIMESTAMP',
