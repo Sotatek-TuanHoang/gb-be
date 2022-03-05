@@ -9,6 +9,6 @@ export class DexConsole {
     description: 'Crawl event',
   })
   async handle(): Promise<void> {
-    // console.log('222222222222222222222222');
+    console.log('222222222222222222222222');
   }
 }

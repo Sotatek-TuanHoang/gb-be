@@ -27,16 +27,6 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
 
   await app.listen(appPort);
-
-  if (!config.get<boolean>('cron.enable')) {
-    // disable when cron enable is false
-    const schedulerRegistry = app.get(SchedulerRegistry);
-    const jobs = schedulerRegistry.getCronJobs();
-    jobs.forEach((_, jobId) => {
-      schedulerRegistry.deleteCronJob(jobId);
-    });
-  }
-
   const logger = app.get(Logger);
   logger.setContext('NestApplication');
   logger.log(`Application is running on: ${await app.getUrl()}`);
