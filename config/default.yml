@@ -18,5 +18,5 @@ default:
 
 cron:
   enable:
-    __name: false
+    __name: true
     __format: json

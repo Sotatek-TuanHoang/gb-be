@@ -30,6 +30,9 @@ export class PoolInfoEntity {
   lp_token: string;
 
   @Column()
+  lp_token_amount: string;
+
+  @Column()
   score_per_block: string;
 
   @Column()

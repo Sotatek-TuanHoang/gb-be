@@ -50,6 +50,13 @@ export class poolInfos1646364503477 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'lp_token_amount',
+            type: 'decimal',
+            precision: 40,
+            scale: 0,
+            default: '0',
+          },
+          {
             name: 'score_per_block',
             type: 'decimal',
             precision: 40,
