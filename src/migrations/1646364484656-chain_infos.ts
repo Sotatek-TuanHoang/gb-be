@@ -1,32 +1,23 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class crawlStatus1643362782714 implements MigrationInterface {
+export class chainInfos1646364484656 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'crawl_status',
+        name: 'chain_infos',
         columns: [
           {
             name: 'id',
-            type: 'varchar',
-            isPrimary: true,
-            isGenerated: false,
-            isNullable: false,
-          },
-          {
-            name: 'contract_name',
-            type: 'varchar',
-            isNullable: false,
-          },
-          {
-            name: 'contract_address',
-            type: 'varchar',
-            isNullable: false,
-          },
-          {
-            name: 'block_number',
             type: 'int',
-            isNullable: false,
+            isPrimary: true,
+            isGenerated: true,
+            generationStrategy: 'increment',
+            unsigned: true,
+          },
+          {
+            name: 'current_block',
+            type: 'int',
+            default: '0',
           },
           {
             name: 'created_at',
@@ -46,6 +37,6 @@ export class crawlStatus1643362782714 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('crawl_status');
+    await queryRunner.dropTable('chain_infos');
   }
 }

@@ -6,19 +6,13 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('crawl_status')
-export class CrawlStatus {
+@Entity('chain_infos')
+export class ChainInfoEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  contract_name: string;
-
-  @Column()
-  contract_address: string;
-
-  @Column()
-  block_number: number;
+  current_block: string;
 
   @CreateDateColumn()
   created_at: Date;
