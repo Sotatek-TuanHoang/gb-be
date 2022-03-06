@@ -16,4 +16,15 @@ export class DexController {
     );
     return true;
   }
+
+  @Get('/unstake')
+  async unstake(@Query() params: StakeDto): Promise<boolean> {
+    await this.dexService.unstake(
+      params.poolId,
+      params.userAddress,
+      new BigNumber(params.amount),
+      params.blockNumber,
+    );
+    return true;
+  }
 }

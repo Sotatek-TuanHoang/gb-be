@@ -28,10 +28,13 @@ export class DexService {
     blockNumber: string,
   ): Promise<boolean> {
     await this.updatePool(poolId, blockNumber);
-    const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
+    let userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     if (new BigNumber(userInfo.amount).gt('0')) {
       await this.updateUser(poolId, userAddress, blockNumber);
+      // claim last reward
+      await this.calculateReward(poolId, userAddress, blockNumber);
+      userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     } else {
       userInfo.last_block = blockNumber;
       userInfo.reward_debt_1 = '0';
@@ -55,6 +58,7 @@ export class DexService {
   ): Promise<boolean> {
     await this.updatePool(poolId, blockNumber);
     await this.updateUser(poolId, userAddress, blockNumber);
+    await this.calculateReward(poolId, userAddress, blockNumber);
     const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
@@ -240,5 +244,72 @@ export class DexService {
     }
 
     return currentScorePerBlock;
+  }
+
+  async calculateReward(
+    poolId: number,
+    userAddress: string,
+    blockNumber: string,
+  ): Promise<boolean> {
+    const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
+    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
+    const userScorePerBlock = await this.userScorePerBlock(
+      poolId,
+      userAddress,
+      userInfo,
+    );
+    const poolMultiplier = await this.getMultiplier(
+      poolId,
+      new BigNumber(poolInfo.last_reward_block),
+      new BigNumber(blockNumber),
+      new BigNumber(poolInfo.score_per_block),
+    );
+    const userMultiplier = await this.getMultiplier(
+      poolId,
+      new BigNumber(userInfo.last_block),
+      new BigNumber(blockNumber),
+      userScorePerBlock,
+    );
+    const userScore = userMultiplier.multiplier
+      .multipliedBy(userInfo.amount)
+      .div(BONE)
+      .plus(userInfo.score);
+    const totalScore = poolMultiplier.multiplier
+      .multipliedBy(poolInfo.lp_token_amount)
+      .div(BONE)
+      .plus(poolInfo.total_score);
+    const reward_1 = new BigNumber(blockNumber)
+      .minus(poolInfo.start_block)
+      .multipliedBy(poolInfo.reward_per_block_1);
+    const reward_2 = new BigNumber(blockNumber)
+      .minus(poolInfo.start_block)
+      .multipliedBy(poolInfo.reward_per_block_2);
+
+    const userRewardAll_1 = reward_1.multipliedBy(userScore).div(totalScore);
+    const userRewardAll_2 = reward_2.multipliedBy(userScore).div(totalScore);
+
+    const userReward_1 = userRewardAll_1.gte(userInfo.reward_debt_1)
+      ? userRewardAll_1.minus(userInfo.reward_debt_1)
+      : new BigNumber(0);
+    const userReward_2 = userRewardAll_2.gte(userInfo.reward_debt_2)
+      ? userRewardAll_2.minus(userInfo.reward_debt_2)
+      : new BigNumber(0);
+
+    userInfo.pending_reward_1 = userReward_1
+      .plus(userInfo.pending_reward_1)
+      .toString();
+    userInfo.pending_reward_2 = userReward_2
+      .plus(userInfo.pending_reward_2)
+      .toString();
+    userInfo.reward_debt_1 = userReward_1
+      .plus(userInfo.reward_debt_1)
+      .toString();
+
+    userInfo.reward_debt_2 = userReward_2
+      .plus(userInfo.reward_debt_2)
+      .toString();
+
+    await this.userInfoRepo.save(userInfo);
+    return true;
   }
 }
