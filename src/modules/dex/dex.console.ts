@@ -50,7 +50,7 @@ export class DexConsole {
 
         case MethodName.REMOVE_LIQUIDITY:
           console.log('method', method);
-          this.dexService.unstake(poolInfos.id, from, amount, blockNumber);
+          // this.dexService.unstake(poolInfos.id, from, amount, blockNumber);
           break;
         default:
           break;
