@@ -14,8 +14,23 @@ export class UserInfoRepository extends Repository<UserInfoEntity> {
       },
     });
 
-    const result = userInfo ? userInfo : new UserInfoEntity();
-    result.user_address = userAddress;
-    return result;
+    if (userInfo) {
+      return userInfo;
+    }
+
+    const empty: UserInfoEntity = {
+      user_address: userAddress,
+      pool_id: poolId,
+      reward_debt_1: '0',
+      reward_debt_2: '0',
+      pending_reward_1: '0',
+      pending_reward_2: '0',
+      last_block: '0',
+      amount: '0',
+      score: '0',
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    return empty;
   }
 }

@@ -27,11 +27,11 @@ export class DexService {
     amount: BigNumber,
     blockNumber: string,
   ): Promise<boolean> {
-    this.updatePool(poolId, blockNumber);
+    await this.updatePool(poolId, blockNumber);
     const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     if (new BigNumber(userInfo.amount).gt('0')) {
-      this.updateUser(poolId, userAddress, blockNumber);
+      await this.updateUser(poolId, userAddress, blockNumber);
     } else {
       userInfo.last_block = blockNumber;
       userInfo.reward_debt_1 = '0';
@@ -61,8 +61,8 @@ export class DexService {
     poolInfo.lp_token_amount = new BigNumber(poolInfo.lp_token_amount)
       .minus(amount)
       .toString();
-    this.poolInfoRepo.save(poolInfo);
-    this.userInfoRepo.save(userInfo);
+    await this.poolInfoRepo.save(poolInfo);
+    await this.userInfoRepo.save(userInfo);
     return true;
   }
 
@@ -87,7 +87,6 @@ export class DexService {
     //
     let multiplier = new BigNumber(0);
     let start = new BigNumber(from.toString());
-
     if (firstRange.gte(multiplierRange)) {
       result.multiplier = multiplier.plus(
         to.minus(start).multipliedBy(scorePerBlock),
@@ -129,7 +128,6 @@ export class DexService {
     if (blockNumber <= poolInfo.last_reward_block) {
       return true;
     }
-
     if (poolInfo.lp_token_amount == '0') {
       poolInfo.last_reward_block = blockNumber;
       await this.poolInfoRepo.save(poolInfo);
@@ -177,7 +175,7 @@ export class DexService {
       await this.getUserScore(poolId, userAddress, userInfo, blockNumber)
     ).toString();
     userInfo.last_block = blockNumber;
-    this.userInfoRepo.save(userInfo);
+    await this.userInfoRepo.save(userInfo);
   }
 
   async getUserScore(
@@ -240,5 +238,7 @@ export class DexService {
         end = end.minus(poolInfo.period);
       }
     }
+
+    return currentScorePerBlock;
   }
 }
