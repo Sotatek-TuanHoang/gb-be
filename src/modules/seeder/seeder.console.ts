@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Command, Console } from 'nestjs-console';
+import { ChainInfoEntity } from 'src/models/entities/chain-info.entity';
 import { PoolInfoEntity } from 'src/models/entities/pool-info.entity';
+import { ChainInfoRepository } from 'src/models/repositories/chain-info.repository';
 import { PoolInfoRepository } from 'src/models/repositories/pool-info.repository';
+import { UserInfoRepository } from 'src/models/repositories/user-info.repository';
 import { DATA_POOL_INFO } from 'src/modules/seeder/pool-info.seeder';
 
 @Console()
@@ -11,13 +14,21 @@ export class SeederConsole {
   constructor(
     @InjectRepository(PoolInfoRepository)
     private poolInfoRepo: PoolInfoRepository,
+    @InjectRepository(ChainInfoRepository)
+    private chainInfoRepo: ChainInfoRepository,
+    @InjectRepository(UserInfoRepository)
+    private userInfoRepo: UserInfoRepository,
   ) {}
   @Command({
     command: 'seeding-data',
     description: 'Seeding pool data',
   })
   async handle(): Promise<void> {
-    await this.seedingPoolInfo();
+    await Promise.all([
+      this.seedingPoolInfo(),
+      this.seedingChainInfo(),
+      this.seedingUserInfo(),
+    ]);
   }
 
   private async seedingPoolInfo(): Promise<void> {
@@ -37,5 +48,17 @@ export class SeederConsole {
       item.end_reduce_block = element.end_reduce_block;
       await this.poolInfoRepo.save(item);
     }
+  }
+
+  private async seedingChainInfo(): Promise<void> {
+    await this.chainInfoRepo.clear();
+    const item = new ChainInfoEntity();
+    item.current_block = '0';
+    item.id = 1;
+    await this.chainInfoRepo.save(item);
+  }
+
+  private async seedingUserInfo(): Promise<void> {
+    await this.userInfoRepo.clear();
   }
 }
