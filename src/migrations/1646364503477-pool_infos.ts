@@ -75,7 +75,9 @@ export class poolInfos1646364503477 implements MigrationInterface {
           },
           {
             name: 'reduction_rate',
-            type: 'int',
+            type: 'decimal',
+            precision: 40,
+            scale: 0,
             default: '0',
           },
           {
