@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConsoleModule } from 'nestjs-console';
 import { defaultConfig } from 'src/configs/database.config';
 import { DexModule } from 'src/modules/dex/dex.module';
+import { SeederModule } from 'src/modules/seeder/seeder.module';
 
 const Modules = [
   Logger,
@@ -11,6 +12,7 @@ const Modules = [
   TypeOrmModule.forRoot(defaultConfig),
   ConsoleModule,
   DexModule,
+  SeederModule,
 ];
 
 export default Modules;
