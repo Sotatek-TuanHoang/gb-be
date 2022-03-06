@@ -15,6 +15,9 @@ cron:
     __name: CRON_ENABLE
     __format: json
 
+address:
+  routerAddress: ROUTER_ADDRESS
+
 pool:
   EURG_GBEX: EURG_GBEX
   SRX_USNOTA: SRX_USNOTA
