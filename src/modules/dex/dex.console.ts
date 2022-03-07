@@ -40,10 +40,15 @@ export class DexConsole {
 
       switch (method) {
         case MethodName.ADD_LIQUIDITY:
-          this.dexService.stake(poolInfos.id, from, amount, blockNumber);
+          await this.dexService.stake(poolInfos.id, from, amount, blockNumber);
           break;
         case MethodName.REMOVE_LIQUIDITY:
-          this.dexService.unstake(poolInfos.id, from, amount, blockNumber);
+          await this.dexService.unstake(
+            poolInfos.id,
+            from,
+            amount,
+            blockNumber,
+          );
           break;
         default:
           break;
