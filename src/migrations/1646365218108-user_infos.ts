@@ -65,6 +65,27 @@ export class userInfos1646365218108 implements MigrationInterface {
             default: '0',
           },
           {
+            name: 'status',
+            type: 'varchar',
+            isNullable: false,
+            default: 'pending',
+          },
+          {
+            name: 'txid',
+            type: 'text',
+            isNullable: true,
+          },
+          {
+            name: 'signed_tx',
+            type: 'text',
+            isNullable: true,
+          },
+          {
+            name: 'note',
+            type: 'text',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: 'datetime',
             isNullable: false,

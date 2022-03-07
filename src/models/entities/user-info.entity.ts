@@ -35,9 +35,28 @@ export class UserInfoEntity {
   @Column()
   score: string;
 
+  @Column()
+  status: UserHistoryStatus;
+
+  @Column()
+  txid: string;
+
+  @Column()
+  signed_tx: string;
+
+  @Column()
+  note: string;
+
   @CreateDateColumn()
   created_at: Date;
 
   @UpdateDateColumn()
   updated_at: Date;
+}
+
+export enum UserHistoryStatus {
+  Pending = 'pending',
+  Claim = 'claim',
+  Complete = 'complete',
+  Failed = 'failed',
 }
