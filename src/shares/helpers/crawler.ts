@@ -25,7 +25,7 @@ export async function crawlByMethodName(
   const chainInfos = await chain_infos.findOne({ id: 1 });
   if (chainInfos.current_block) cursor = Number(chainInfos.current_block);
 
-  while (chainInfos.current_block <= chainInfos.max_block) {
+  while (cursor <= Number(chainInfos.max_block)) {
     cursor = Math.min(cursor + STEP_BLOCK, await web3.eth.getBlockNumber());
     const block = await web3.eth.getBlock(cursor);
     const transactionsP = [...block.transactions].map(async (tx) => {
