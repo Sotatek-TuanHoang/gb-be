@@ -8,6 +8,7 @@ import { MethodName } from '../../shares/enums/method-name.enum';
 import { DexService } from './dex.service';
 import { getConfig } from 'src/configs/index';
 import { PoolInfoRepository } from '../../models/repositories/pool-info.repository';
+import { UserHistoryRepository } from '../../models/repositories/user-history.repository';
 
 @Console()
 @Injectable()
@@ -17,6 +18,7 @@ export class DexConsole {
   constructor(
     private readonly chainInfoRepository: ChainInfoRepository,
     private readonly poolInfoRepository: PoolInfoRepository,
+    private readonly userHistoryRepository: UserHistoryRepository,
     private readonly dexService: DexService,
   ) {
     this.web3 = new Web3();
@@ -33,9 +35,25 @@ export class DexConsole {
     const { address } = getConfig();
 
     const eventHandler = async (methodInfo): Promise<void> => {
-      const { method, blockNumber, from, poolAddress, amount } = methodInfo;
+      const {
+        method,
+        blockNumber,
+        from,
+        poolAddress,
+        amount,
+        tx_hash,
+      } = methodInfo;
       const poolInfos = await this.poolInfoRepository.findOne({
         lp_token: poolAddress,
+      });
+
+      if (!poolInfos) return;
+      await this.userHistoryRepository.insert({
+        pool_id: poolInfos.id,
+        user_address: from,
+        tx_hash: tx_hash,
+        action: method,
+        amount,
       });
 
       switch (method) {

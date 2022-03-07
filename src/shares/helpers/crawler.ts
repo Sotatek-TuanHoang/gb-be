@@ -80,6 +80,7 @@ export async function crawlByMethodName(
             from: txR.from,
             poolAddress: logs[3].address,
             amount,
+            tx_hash: tx,
           });
       }
     });
