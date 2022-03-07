@@ -8,9 +8,9 @@ import { MethodName } from '../enums/method-name.enum';
 const STEP_BLOCK = 1;
 const decoder = new InputDataDecoder(ABI);
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// function sleep(ms: number): Promise<void> {
+//   return new Promise((resolve) => setTimeout(resolve, ms));
+// }
 
 export async function crawlByMethodName(
   // eslint-disable-next-line
@@ -22,10 +22,10 @@ export async function crawlByMethodName(
 ): Promise<void> {
   let cursor = 0;
 
-  const latestBlock = await chain_infos.findOne({ id: 1 });
-  if (latestBlock.current_block) cursor = Number(latestBlock.current_block);
+  const chainInfos = await chain_infos.findOne({ id: 1 });
+  if (chainInfos.current_block) cursor = Number(chainInfos.current_block);
 
-  while (true) {
+  while (chainInfos.current_block <= chainInfos.max_block) {
     cursor = Math.min(cursor + STEP_BLOCK, await web3.eth.getBlockNumber());
     const block = await web3.eth.getBlock(cursor);
     const transactionsP = [...block.transactions].map(async (tx) => {

@@ -20,6 +20,11 @@ export class chainInfos1646364484656 implements MigrationInterface {
             default: '0',
           },
           {
+            name: 'max_block',
+            type: 'int',
+            default: '0',
+          },
+          {
             name: 'created_at',
             type: 'datetime',
             isNullable: false,

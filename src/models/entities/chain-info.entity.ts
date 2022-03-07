@@ -14,6 +14,9 @@ export class ChainInfoEntity {
   @Column()
   current_block: string;
 
+  @Column()
+  max_block: string;
+
   @CreateDateColumn()
   created_at: Date;
 
