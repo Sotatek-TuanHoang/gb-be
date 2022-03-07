@@ -1,5 +1,8 @@
 import { EntityRepository, Repository } from 'typeorm';
-import { UserInfoEntity } from 'src/models/entities/user-info.entity';
+import {
+  UserHistoryStatus,
+  UserInfoEntity,
+} from 'src/models/entities/user-info.entity';
 
 @EntityRepository(UserInfoEntity)
 export class UserInfoRepository extends Repository<UserInfoEntity> {
@@ -28,9 +31,24 @@ export class UserInfoRepository extends Repository<UserInfoEntity> {
       last_block: '0',
       amount: '0',
       score: '0',
+      status: UserHistoryStatus.Failed,
+      txid: '',
+      signed_tx: '',
+      note: '',
       created_at: new Date(),
       updated_at: new Date(),
     };
     return empty;
+  }
+
+  async getDataClaimByUserAddress(
+    userAddress: string,
+  ): Promise<UserInfoEntity[]> {
+    return await this.find({
+      where: {
+        user_address: userAddress,
+        status: UserHistoryStatus.Pending,
+      },
+    });
   }
 }
