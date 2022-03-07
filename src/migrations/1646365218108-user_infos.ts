@@ -68,17 +68,19 @@ export class userInfos1646365218108 implements MigrationInterface {
             name: 'status',
             type: 'varchar',
             isNullable: false,
-            default: 'pending',
+            default: `'pending'`,
           },
           {
             name: 'txid',
             type: 'text',
             isNullable: true,
+            default: null,
           },
           {
             name: 'signed_tx',
             type: 'text',
             isNullable: true,
+            default: null,
           },
           {
             name: 'note',
