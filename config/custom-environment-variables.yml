@@ -30,3 +30,8 @@ pool:
   PRNT_XDC: PRNT_XDC
   XDC_USDG: XDC_USDG
   SRX_USDG: SRX_USDG
+
+matcher_address: MATCHER_ADDRESS
+matcher_private_key: MATCHER_PRIVATE_KEY
+chain_id: CHAIN_ID
+xin_fin_rpc: XIN_FIN_RPC

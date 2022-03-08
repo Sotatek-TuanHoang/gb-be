@@ -1,15 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import BigNumber from 'bignumber.js';
-import { UserInfoEntity } from 'src/models/entities/user-info.entity';
+import {
+  UserInfoEntity,
+  UserInfoStatus,
+} from 'src/models/entities/user-info.entity';
 import { ChainInfoRepository } from 'src/models/repositories/chain-info.repository';
 import { PoolInfoRepository } from 'src/models/repositories/pool-info.repository';
 import { UserHistoryRepository } from 'src/models/repositories/user-history.repository';
 import { UserInfoRepository } from 'src/models/repositories/user-info.repository';
 import { BONE, MIN_SCORE_PER_BLOCK } from 'src/modules/dex/dex.const';
+import { erc20ABI } from 'src/shares/abis/common-abi';
+import { getConfig } from 'src/configs';
+// eslint-disable-next-line
+const Web3 = require('xdc3');
+import * as EthereumTx from 'ethereumjs-tx';
 
 @Injectable()
 export class DexService {
+  private readonly web3;
   constructor(
     @InjectRepository(PoolInfoRepository)
     private poolInfoRepo: PoolInfoRepository,
@@ -19,7 +28,11 @@ export class DexService {
     private userHistoryRepo: UserHistoryRepository,
     @InjectRepository(ChainInfoRepository)
     private chainInfoRepo: ChainInfoRepository,
-  ) {}
+  ) {
+    const xinFinRpc = getConfig().get<string>('xin_fin_rpc');
+    this.web3 = new Web3();
+    this.web3.setProvider(new Web3.providers.HttpProvider(xinFinRpc));
+  }
 
   async stake(
     poolId: number,
@@ -311,5 +324,86 @@ export class DexService {
 
     await this.userInfoRepo.save(userInfo);
     return true;
+  }
+
+  async claim(userAddress: string): Promise<UserInfoEntity[]> {
+    const matcherAddress = getConfig().get<string>('matcher_address');
+    const chainId = getConfig().get<number>('chain_id');
+    // const _gasLimit = await contract.methods
+    //   .transfer(
+    //     'xdce861A5bfFAdE378166232a79289eb81E24c98fdf',
+    //     '1000000000000000000',
+    //   )
+    //   .estimateGas({ from: matcherAddress });
+    // const gasLimit = this.web3.utils.toBN(_gasLimit);
+    const gasPrice = this.web3.utils.toBN(await this.web3.eth.getGasPrice());
+    const dataClaim = await this.userInfoRepo.getDataClaimByUserAddress(
+      userAddress,
+    );
+
+    if (dataClaim.length === 0) return [];
+
+    const dataReturn = [];
+    for (const claim of dataClaim) {
+      const poolInfo = await this.poolInfoRepo.findOne(claim.pool_id);
+      if (!poolInfo) {
+        claim.note = 'No pool found';
+        claim.status = UserInfoStatus.Failed;
+        dataReturn.push(claim);
+        continue;
+      }
+
+      try {
+        const count = await this.web3.eth.getTransactionCount(matcherAddress);
+
+        const contractReward1 = new this.web3.eth.Contract(
+          erc20ABI,
+          poolInfo.reward_token_1.toLowerCase(),
+        );
+        const data1 = await contractReward1.methods
+          .transfer(claim.user_address, claim.pending_reward_1)
+          .encodeABI();
+        const rawTx1 = {
+          nonce: this.web3.utils.toHex(count),
+          gasLimit: this.web3.utils.toHex(2000000),
+          gasPrice: this.web3.utils.toHex(gasPrice),
+          data: data1,
+          to: poolInfo.reward_token_1.toLowerCase(),
+          chainId: chainId,
+        };
+        const tx1 = new EthereumTx(rawTx1);
+
+        const contractReward2 = new this.web3.eth.Contract(
+          erc20ABI,
+          poolInfo.reward_token_2.toLowerCase(),
+        );
+        const data2 = await contractReward2.methods
+          .transfer(claim.user_address, claim.pending_reward_2)
+          .encodeABI();
+        const rawTx2 = {
+          nonce: this.web3.utils.toHex(count),
+          gasLimit: this.web3.utils.toHex(2000000),
+          gasPrice: this.web3.utils.toHex(gasPrice),
+          data: data2,
+          to: poolInfo.reward_token_2,
+          chainId: chainId,
+        };
+        const tx2 = new EthereumTx(rawTx2);
+
+        claim.txid1 = `0x${tx1.hash().toString('hex')}`;
+        claim.txid2 = `0x${tx2.hash().toString('hex')}`;
+        claim.signed_tx1 = tx1.serialize().toString('hex');
+        claim.signed_tx2 = tx2.serialize().toString('hex');
+        claim.status = UserInfoStatus.Claim;
+
+        dataReturn.push(claim);
+      } catch (error) {
+        claim.status = UserInfoStatus.Failed;
+        claim.note = JSON.stringify(error);
+        dataReturn.push(claim);
+      }
+    }
+    await this.userInfoRepo.save(dataReturn);
+    return dataReturn;
   }
 }

@@ -2,6 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import BigNumber from 'bignumber.js';
 import { DexService } from 'src/modules/dex/dex.service';
 import { StakeDto } from 'src/modules/dex/stake.dto';
+import { UserInfoEntity } from 'src/models/entities/user-info.entity';
 
 @Controller('dex')
 export class DexController {
@@ -26,5 +27,12 @@ export class DexController {
       params.blockNumber,
     );
     return true;
+  }
+
+  @Get('claim')
+  async claim(
+    @Query() params: { user_address: string },
+  ): Promise<UserInfoEntity[]> {
+    return await this.dexService.claim(params.user_address);
   }
 }

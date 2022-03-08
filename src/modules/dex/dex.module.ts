@@ -7,7 +7,7 @@ import { DexService } from 'src/modules/dex/dex.service';
 @Module({
   imports: [DatabaseCommonRepository, Logger],
   controllers: [DexController],
-  providers: [DexService, DexConsole],
+  providers: [DexService, DexConsole, Logger],
   exports: [DexService],
 })
 export class DexModule {}

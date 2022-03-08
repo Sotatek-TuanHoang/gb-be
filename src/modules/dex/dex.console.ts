@@ -1,13 +1,17 @@
 // eslint-disable-next-line
+import { UserInfoStatus } from "../../models/entities/user-info.entity";
+import * as EthereumTx from "ethereumjs-tx";
+import { Command, Console } from "nestjs-console";
+import { Injectable, Logger } from "@nestjs/common";
+import { crawlByMethodName, sleep } from "src/shares/helpers/crawler";
+import { ChainInfoRepository } from "../../models/repositories/chain-info.repository";
+import { MethodName } from "../../shares/enums/method-name.enum";
+import { DexService } from "./dex.service";
+import { getConfig } from "src/configs/index";
+import { PoolInfoRepository } from "../../models/repositories/pool-info.repository";
+import { UserInfoRepository } from "src/models/repositories/user-info.repository";
+
 const Web3 = require('xdc3');
-import { Command, Console } from 'nestjs-console';
-import { Injectable } from '@nestjs/common';
-import { crawlByMethodName } from 'src/shares/helpers/crawler';
-import { ChainInfoRepository } from '../../models/repositories/chain-info.repository';
-import { MethodName } from '../../shares/enums/method-name.enum';
-import { DexService } from './dex.service';
-import { getConfig } from 'src/configs/index';
-import { PoolInfoRepository } from '../../models/repositories/pool-info.repository';
 
 @Console()
 @Injectable()
@@ -17,12 +21,14 @@ export class DexConsole {
   constructor(
     private readonly chainInfoRepository: ChainInfoRepository,
     private readonly poolInfoRepository: PoolInfoRepository,
+    private readonly userInfoRepository: UserInfoRepository,
     private readonly dexService: DexService,
+    private readonly logger: Logger,
   ) {
+    this.logger.setContext(DexConsole.name);
+    const xinFinRpc = getConfig().get<string>('xin_fin_rpc');
     this.web3 = new Web3();
-    this.web3.setProvider(
-      new Web3.providers.HttpProvider('https://rpc.xinfin.network'),
-    );
+    this.web3.setProvider(new Web3.providers.HttpProvider(xinFinRpc));
   }
 
   @Command({
@@ -61,5 +67,39 @@ export class DexConsole {
       eventHandler,
       address.routerAddress,
     );
+  }
+
+  @Command({
+    command: 'claim-reward',
+    description: 'Claim Reward',
+  })
+  async claimReward(): Promise<void> {
+    const matcherPrivateKey = getConfig().get<string>('matcher_private_key');
+    const privateKey = Buffer.from(matcherPrivateKey, 'hex');
+    while (true) {
+      const userInfoClaim = await this.userInfoRepository.getOneDataClaimProcess();
+      if (!userInfoClaim) {
+        await sleep(3000);
+        this.logger.log('Waiting for next user info claim data');
+        continue;
+      }
+      const tx1 = new EthereumTx(userInfoClaim.signed_tx1);
+      const tx2 = new EthereumTx(userInfoClaim.signed_tx2);
+      tx1.sign(privateKey);
+      tx2.sign(privateKey);
+      userInfoClaim.txid1 = `0x${tx1.hash().toString('hex')}`;
+      userInfoClaim.txid2 = `0x${tx2.hash().toString('hex')}`;
+      userInfoClaim.signed_tx1 = tx1.serialize().toString('hex');
+      userInfoClaim.signed_tx2 = tx2.serialize().toString('hex');
+      const receipt1 = await this.web3.eth.sendSignedTransaction(
+        `0x${userInfoClaim.signed_tx1}`,
+      );
+      const receipt2 = await this.web3.eth.sendSignedTransaction(
+        `0x${userInfoClaim.signed_tx2}`,
+      );
+      userInfoClaim.status =
+        receipt1 && receipt2 ? UserInfoStatus.Complete : UserInfoStatus.Failed;
+      await this.userInfoRepository.save(userInfoClaim);
+    }
   }
 }

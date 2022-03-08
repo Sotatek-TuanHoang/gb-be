@@ -89,3 +89,7 @@ export async function crawlByMethodName(
     // await sleep(BLOCK_TIME);
   }
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

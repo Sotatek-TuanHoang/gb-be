@@ -36,13 +36,19 @@ export class UserInfoEntity {
   score: string;
 
   @Column()
-  status: UserHistoryStatus;
+  status: UserInfoStatus;
 
   @Column()
-  txid: string;
+  txid1: string;
 
   @Column()
-  signed_tx: string;
+  signed_tx1: string;
+
+  @Column()
+  txid2: string;
+
+  @Column()
+  signed_tx2: string;
 
   @Column()
   note: string;
@@ -54,7 +60,7 @@ export class UserInfoEntity {
   updated_at: Date;
 }
 
-export enum UserHistoryStatus {
+export enum UserInfoStatus {
   Pending = 'pending',
   Claim = 'claim',
   Complete = 'complete',
