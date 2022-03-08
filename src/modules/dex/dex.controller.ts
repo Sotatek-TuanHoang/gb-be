@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import BigNumber from 'bignumber.js';
 import { DexService } from 'src/modules/dex/dex.service';
-import { StakeDto } from 'src/modules/dex/stake.dto';
+import { StakeDto, UserDataDto } from 'src/modules/dex/stake.dto';
 import { UserInfoEntity } from 'src/models/entities/user-info.entity';
 
 @Controller('dex')
@@ -34,5 +34,11 @@ export class DexController {
     @Query() params: { user_address: string },
   ): Promise<UserInfoEntity[]> {
     return await this.dexService.claim(params.user_address);
+  }
+
+  @Get('/user-data')
+  async getUserData(@Query() params: UserDataDto): Promise<any> {
+    const data = await this.dexService.getDataUser(params.userAddress);
+    return data;
   }
 }

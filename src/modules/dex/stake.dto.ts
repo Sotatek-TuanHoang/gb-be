@@ -4,3 +4,7 @@ export class StakeDto {
   amount: string;
   blockNumber: string;
 }
+
+export class UserDataDto {
+  userAddress: string;
+}

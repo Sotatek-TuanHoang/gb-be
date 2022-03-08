@@ -143,3 +143,32 @@ export const DATA_POOL_INFO = [
     end_reduce_block: '5000',
   },
 ];
+
+export const POOL_TEST = [
+  {
+    name: 'RW12',
+    lp_token: 'xdc274d767b18b2070f6560a348D4258a541229306c',
+    start_block: '0',
+    reward_token_1: 'xdc3b401542fcb33927faf55caaf135ca891ac9a675',
+    reward_token_2: 'xdc12614D7f8212184d71525e0aC5f99dd5a66a6eCb',
+    reward_per_block_1: '10000000000000000',
+    reward_per_block_2: '10000000000000000',
+    score_per_block: '1000000000000000000',
+    period: '100',
+    reduction_rate: '500000000000000000',
+    end_reduce_block: '5000',
+  },
+  {
+    name: 'RW34',
+    lp_token: 'xdc05281b89A02561E009C8f57429c46dD1e1ba5c43',
+    start_block: '0',
+    reward_token_1: 'xdc2A9186A7F4553aE10dCD75de397C91cc39F4f139',
+    reward_token_2: 'xdc1Ae74f3Ad660F561B62e4dC2C4210506FE0bC4d8',
+    reward_per_block_1: '10000000000000000',
+    reward_per_block_2: '10000000000000000',
+    score_per_block: '1000000000000000000',
+    period: '100',
+    reduction_rate: '500000000000000000',
+    end_reduce_block: '5000',
+  },
+];
