@@ -341,10 +341,14 @@ export class DexService {
   async getDataUser(userAddress: string): Promise<any> {
     const [userReward, userHistories] = await Promise.all([
       this.userInfoRepo.find({
-        user_address: userAddress,
+        where: {
+          user_address: userAddress,
+        },
       }),
       this.userHistoryRepo.find({
-        user_address: userAddress,
+        where: {
+          user_address: userAddress,
+        },
       }),
     ]);
 

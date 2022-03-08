@@ -2,6 +2,7 @@ app:
   name: APP_NAME
   port: APP_PORT
   env: NODE_ENV
+  isTest: IS_TEST
 
 default:
   host: MYSQL_HOST
