@@ -34,6 +34,7 @@ export async function crawlByMethodName(
         contractAddress,
       });
       if (txR.status && txR?.to === contractAddress.toLowerCase()) {
+        console.log("In hereeeeeeeeeeeeeeeeeeeeee");
         const txT = await web3.eth.getTransaction(tx);
         const { method, inputs } = decoder.decodeData(txT.input);
 
