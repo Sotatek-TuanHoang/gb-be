@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import BigNumber from 'bignumber.js';
 import {
@@ -363,6 +363,9 @@ export class DexService {
   // }
 
   async claim(userAddress: string): Promise<UserInfoEntity[]> {
+    if (!(await this.updateDataBeforeClaim(userAddress))) {
+      throw new HttpException('User is invalid', 400);
+    }
     const matcherAddress = getConfig().get<string>('matcher_address');
     const chainId = getConfig().get<number>('chain_id');
     // const _gasLimit = await contract.methods
@@ -441,5 +444,33 @@ export class DexService {
     }
     await this.userInfoRepo.save(dataReturn);
     return dataReturn;
+  }
+
+  async updateDataBeforeClaim(userAddress: string): Promise<boolean> {
+    const chainInfo = await this.chainInfoRepo.findOne({ id: 1 });
+    if (!chainInfo.current_block) {
+      return false;
+    }
+
+    if (chainInfo.current_block != chainInfo.max_block) {
+      return false;
+    }
+
+    const maxBlock = chainInfo.max_block;
+    const userData = await this.userInfoRepo.find({
+      where: {
+        user_address: userAddress,
+      },
+    });
+
+    if (!userData || userData == []) {
+      return false;
+    }
+
+    for (let i = 0; i < userData.length; i++) {
+      const item = userData[i];
+      await this.stake(item.pool_id, userAddress, new BigNumber(0), maxBlock);
+    }
+    return true;
   }
 }
