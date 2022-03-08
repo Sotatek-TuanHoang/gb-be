@@ -71,13 +71,25 @@ export class userInfos1646365218108 implements MigrationInterface {
             default: `'pending'`,
           },
           {
-            name: 'txid',
+            name: 'txid1',
             type: 'text',
             isNullable: true,
             default: null,
           },
           {
-            name: 'signed_tx',
+            name: 'txid2',
+            type: 'text',
+            isNullable: true,
+            default: null,
+          },
+          {
+            name: 'signed_tx1',
+            type: 'text',
+            isNullable: true,
+            default: null,
+          },
+          {
+            name: 'signed_tx2',
             type: 'text',
             isNullable: true,
             default: null,
