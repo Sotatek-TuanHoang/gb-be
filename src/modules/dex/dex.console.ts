@@ -43,18 +43,21 @@ export class DexConsole {
         amount,
         tx_hash,
       } = methodInfo;
+
       const poolInfos = await this.poolInfoRepository.findOne({
         lp_token: poolAddress,
       });
 
-      if (!poolInfos) return;
       await this.userHistoryRepository.insert({
-        pool_id: poolInfos.id,
+        pool_id: poolInfos?.id || 0,
+        pool_address: poolAddress,
         user_address: from,
         tx_hash: tx_hash,
         action: method,
         amount,
       });
+
+      if (!poolInfos) return;
 
       switch (method) {
         case MethodName.ADD_LIQUIDITY:

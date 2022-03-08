@@ -33,14 +33,46 @@ export async function crawlByMethodName(
       if (txR.status && txR?.to === contractAddress.toLowerCase()) {
         const txT = await web3.eth.getTransaction(tx);
         const { method, inputs } = decoder.decodeData(txT.input);
+
         const logs = txR.logs;
         let amount;
 
         switch (method) {
+          case MethodName.REMOVE_LIQUIDITY_ETH:
+            amount = inputs[3].toString();
+            break;
+          case MethodName.ADD_LIQUIDITY_ETH: {
+            const decodeLogs = web3.eth.abi.decodeLog(
+              [
+                {
+                  indexed: true,
+                  internalType: 'address',
+                  name: 'from',
+                  type: 'address',
+                },
+                {
+                  indexed: true,
+                  internalType: 'address',
+                  name: 'to',
+                  type: 'address',
+                },
+                {
+                  indexed: false,
+                  internalType: 'uint256',
+                  name: 'value',
+                  type: 'uint256',
+                },
+              ],
+              logs[5].data,
+              [logs[5].topics[1], logs[5].topics[2]],
+            );
+            amount = decodeLogs['2'];
+            break;
+          }
           case MethodName.REMOVE_LIQUIDITY:
             amount = inputs[3].toString();
             break;
-          case MethodName.ADD_LIQUIDITY:
+          case MethodName.ADD_LIQUIDITY: {
             const decodeLogs = web3.eth.abi.decodeLog(
               [
                 {
@@ -67,13 +99,16 @@ export async function crawlByMethodName(
             );
             amount = decodeLogs['2'];
             break;
+          }
           default:
-            break;
+            return;
         }
         if (
+          method === MethodName.ADD_LIQUIDITY_ETH ||
+          method === MethodName.REMOVE_LIQUIDITY_ETH ||
           method === MethodName.ADD_LIQUIDITY ||
           method === MethodName.REMOVE_LIQUIDITY
-        )
+        ) {
           await callback({
             method,
             blockNumber: cursor,
@@ -82,6 +117,16 @@ export async function crawlByMethodName(
             amount,
             tx_hash: tx,
           });
+          return;
+        }
+        await callback({
+          method,
+          blockNumber: cursor,
+          from: txR.from,
+          poolAddress: '',
+          amount: 0,
+          tx_hash: tx,
+        });
       }
     });
 
