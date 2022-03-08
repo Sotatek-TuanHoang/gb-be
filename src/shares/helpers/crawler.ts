@@ -34,6 +34,8 @@ export async function crawlByMethodName(
         const txT = await web3.eth.getTransaction(tx);
         const { method, inputs } = decoder.decodeData(txT.input);
 
+        console.log('====================>', { method, inputs });
+
         const logs = txR.logs;
         let amount;
 
@@ -142,7 +144,7 @@ export async function crawlByMethodName(
 
     await Promise.all(transactionsP);
     await chain_infos.update({ id: 1 }, { current_block: String(cursor) });
-    // await sleep(BLOCK_TIME);
+    await sleep(1000);
   }
 }
 
