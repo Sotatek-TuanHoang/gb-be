@@ -22,6 +22,7 @@ export class UserInfoRepository extends Repository<UserInfoEntity> {
     }
 
     const empty: UserInfoEntity = {
+      id: 0,
       user_address: userAddress,
       pool_id: poolId,
       reward_debt_1: '0',
@@ -31,7 +32,7 @@ export class UserInfoRepository extends Repository<UserInfoEntity> {
       last_block: '0',
       amount: '0',
       score: '0',
-      status: UserHistoryStatus.Failed,
+      status: UserHistoryStatus.Pending,
       txid: '',
       signed_tx: '',
       note: '',

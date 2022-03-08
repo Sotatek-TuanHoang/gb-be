@@ -7,9 +7,16 @@ export class userInfos1646365218108 implements MigrationInterface {
         name: 'user_infos',
         columns: [
           {
+            name: 'id',
+            type: 'int',
+            isPrimary: true,
+            isGenerated: true,
+            generationStrategy: 'increment',
+            unsigned: true,
+          },
+          {
             name: 'user_address',
             type: 'varchar',
-            isPrimary: true,
             isNullable: false,
           },
           {

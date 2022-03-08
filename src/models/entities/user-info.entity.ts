@@ -9,6 +9,9 @@ import {
 @Entity('user_infos')
 export class UserInfoEntity {
   @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
   user_address: string;
 
   @Column()

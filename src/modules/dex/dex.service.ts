@@ -46,6 +46,9 @@ export class DexService {
       .toString();
     userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
     await this.poolInfoRepo.save(poolInfo);
+    if (!userInfo.id) {
+      delete userInfo.id;
+    }
     await this.userInfoRepo.save(userInfo);
     return true;
   }
@@ -66,6 +69,9 @@ export class DexService {
       .minus(amount)
       .toString();
     await this.poolInfoRepo.save(poolInfo);
+    if (!userInfo.id) {
+      delete userInfo.id;
+    }
     await this.userInfoRepo.save(userInfo);
     return true;
   }
@@ -179,6 +185,9 @@ export class DexService {
       await this.getUserScore(poolId, userAddress, userInfo, blockNumber)
     ).toString();
     userInfo.last_block = blockNumber;
+    if (!userInfo.id) {
+      delete userInfo.id;
+    }
     await this.userInfoRepo.save(userInfo);
   }
 
@@ -309,7 +318,30 @@ export class DexService {
       .plus(userInfo.reward_debt_2)
       .toString();
 
+    if (!userInfo.id) {
+      delete userInfo.id;
+    }
     await this.userInfoRepo.save(userInfo);
     return true;
   }
+
+  async getDataUser(userAddress: string): Promise<any> {
+    const [userReward, userHistories] = await Promise.all([
+      this.userInfoRepo.find({
+        user_address: userAddress,
+      }),
+      this.userHistoryRepo.find({
+        user_address: userAddress,
+      }),
+    ]);
+
+    return {
+      reward: userReward,
+      histories: userHistories,
+    };
+  }
+
+  // async getDataAllUser(page: number, limit: number, userAddress: string[]): Promise<any> {
+
+  // }
 }
