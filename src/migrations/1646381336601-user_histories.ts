@@ -25,6 +25,11 @@ export class userHistories1646381336601 implements MigrationInterface {
             default: '0',
           },
           {
+            name: 'last_block',
+            type: 'int',
+            default: '0',
+          },
+          {
             name: 'user_address',
             type: 'varchar',
             default: '0',
