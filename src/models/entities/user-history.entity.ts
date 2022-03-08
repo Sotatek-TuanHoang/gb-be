@@ -21,6 +21,9 @@ export class UserHistoryEntity {
   pool_address: string;
 
   @Column()
+  last_block: string;
+
+  @Column()
   tx_hash: string;
 
   @Column()

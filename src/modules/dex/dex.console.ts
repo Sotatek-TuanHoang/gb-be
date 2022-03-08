@@ -51,6 +51,7 @@ export class DexConsole {
       await this.userHistoryRepository.insert({
         pool_id: poolInfos?.id || 0,
         pool_address: poolAddress,
+        last_block: blockNumber,
         user_address: from,
         tx_hash: tx_hash,
         action: method,
