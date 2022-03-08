@@ -59,6 +59,7 @@ export class DexConsole {
       await this.userHistoryRepository.insert({
         pool_id: poolInfos?.id || 0,
         pool_address: poolAddress,
+        last_block: blockNumber,
         user_address: from,
         tx_hash: tx_hash,
         action: method,
@@ -69,9 +70,11 @@ export class DexConsole {
 
       switch (method) {
         case MethodName.ADD_LIQUIDITY:
+        case MethodName.ADD_LIQUIDITY_ETH:
           await this.dexService.stake(poolInfos.id, from, amount, blockNumber);
           break;
         case MethodName.REMOVE_LIQUIDITY:
+        case MethodName.REMOVE_LIQUIDITY_ETH:
           await this.dexService.unstake(
             poolInfos.id,
             from,
