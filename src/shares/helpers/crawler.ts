@@ -37,6 +37,16 @@ export async function crawlByMethodName(
         const logs = txR.logs;
         let amount;
 
+        const transferLog = [...logs].filter((log) => {
+          return (
+            [...log.topics].findIndex(
+              (topic) =>
+                topic ===
+                '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ) > -1
+          );
+        });
+
         switch (method) {
           case MethodName.REMOVE_LIQUIDITY_ETH:
             amount = inputs[3].toString();
@@ -113,7 +123,7 @@ export async function crawlByMethodName(
             method,
             blockNumber: cursor,
             from: txR.from,
-            poolAddress: logs[3].address,
+            poolAddress: transferLog[0].address,
             amount,
             tx_hash: tx,
           });
@@ -123,7 +133,7 @@ export async function crawlByMethodName(
           method,
           blockNumber: cursor,
           from: txR.from,
-          poolAddress: '',
+          poolAddress: transferLog[0].address,
           amount: 0,
           tx_hash: tx,
         });
