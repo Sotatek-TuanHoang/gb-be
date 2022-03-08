@@ -30,8 +30,9 @@ export async function crawlByMethodName(
     const block = await web3.eth.getBlock(cursor);
     const transactionsP = [...block.transactions].map(async (tx) => {
       const txR = await web3.eth.getTransactionReceipt(tx);
-      console.log('txR ===========================+>', { txR });
-      console.log('tx ============================>', { tx });
+      console.log('contractAddress ===========================+>', {
+        contractAddress,
+      });
       if (txR.status && txR?.to === contractAddress.toLowerCase()) {
         const txT = await web3.eth.getTransaction(tx);
         const { method, inputs } = decoder.decodeData(txT.input);
