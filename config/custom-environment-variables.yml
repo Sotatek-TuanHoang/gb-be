@@ -14,3 +14,24 @@ cron:
   enable:
     __name: CRON_ENABLE
     __format: json
+
+address:
+  routerAddress: ROUTER_ADDRESS
+
+pool:
+  EURG_GBEX: EURG_GBEX
+  SRX_USNOTA: SRX_USNOTA
+  SRX_GBEX: SRX_GBEX
+  GBEX_XDC: GBEX_XDC
+  XDC_USNOTA: XDC_USNOTA
+  USDG_GBEX: USDG_GBEX
+  XDC_PLI: XDC_PLI
+  SRX_XDC: SRX_XDC
+  PRNT_XDC: PRNT_XDC
+  XDC_USDG: XDC_USDG
+  SRX_USDG: SRX_USDG
+
+matcher_address: MATCHER_ADDRESS
+matcher_private_key: MATCHER_PRIVATE_KEY
+chain_id: CHAIN_ID
+xin_fin_rpc: XIN_FIN_RPC
