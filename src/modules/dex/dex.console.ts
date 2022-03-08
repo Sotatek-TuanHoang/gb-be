@@ -1,17 +1,17 @@
 // eslint-disable-next-line
-import { UserInfoStatus } from "../../models/entities/user-info.entity";
-import * as EthereumTx from "ethereumjs-tx";
-import { Command, Console } from "nestjs-console";
-import { Injectable, Logger } from "@nestjs/common";
-import { crawlByMethodName, sleep } from "src/shares/helpers/crawler";
-import { ChainInfoRepository } from "../../models/repositories/chain-info.repository";
-import { MethodName } from "../../shares/enums/method-name.enum";
-import { DexService } from "./dex.service";
-import { getConfig } from "src/configs/index";
-import { PoolInfoRepository } from "../../models/repositories/pool-info.repository";
-import { UserInfoRepository } from "src/models/repositories/user-info.repository";
-
 const Web3 = require('xdc3');
+import * as EthereumTx from 'ethereumjs-tx';
+import { UserInfoStatus } from '../../models/entities/user-info.entity';
+import { Command, Console } from 'nestjs-console';
+import { Injectable, Logger } from '@nestjs/common';
+import { crawlByMethodName, sleep } from 'src/shares/helpers/crawler';
+import { ChainInfoRepository } from '../../models/repositories/chain-info.repository';
+import { MethodName } from '../../shares/enums/method-name.enum';
+import { DexService } from './dex.service';
+import { getConfig } from 'src/configs/index';
+import { PoolInfoRepository } from '../../models/repositories/pool-info.repository';
+import { UserInfoRepository } from 'src/models/repositories/user-info.repository';
+import { UserHistoryRepository } from '../../models/repositories/user-history.repository';
 
 @Console()
 @Injectable()
@@ -21,6 +21,7 @@ export class DexConsole {
   constructor(
     private readonly chainInfoRepository: ChainInfoRepository,
     private readonly poolInfoRepository: PoolInfoRepository,
+    private readonly userHistoryRepository: UserHistoryRepository,
     private readonly userInfoRepository: UserInfoRepository,
     private readonly dexService: DexService,
     private readonly logger: Logger,
@@ -39,10 +40,29 @@ export class DexConsole {
     const { address } = getConfig();
 
     const eventHandler = async (methodInfo): Promise<void> => {
-      const { method, blockNumber, from, poolAddress, amount } = methodInfo;
+      const {
+        method,
+        blockNumber,
+        from,
+        poolAddress,
+        amount,
+        tx_hash,
+      } = methodInfo;
+
       const poolInfos = await this.poolInfoRepository.findOne({
         lp_token: poolAddress,
       });
+
+      await this.userHistoryRepository.insert({
+        pool_id: poolInfos?.id || 0,
+        pool_address: poolAddress,
+        user_address: from,
+        tx_hash: tx_hash,
+        action: method,
+        amount,
+      });
+
+      if (!poolInfos) return;
 
       switch (method) {
         case MethodName.ADD_LIQUIDITY:

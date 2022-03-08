@@ -22,6 +22,7 @@ export class UserInfoRepository extends Repository<UserInfoEntity> {
     }
 
     const empty: UserInfoEntity = {
+      id: 0,
       user_address: userAddress,
       pool_id: poolId,
       reward_debt_1: '0',

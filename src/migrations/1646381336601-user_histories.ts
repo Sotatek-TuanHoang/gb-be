@@ -20,6 +20,11 @@ export class userHistories1646381336601 implements MigrationInterface {
             default: '0',
           },
           {
+            name: 'pool_address',
+            type: 'varchar',
+            default: '0',
+          },
+          {
             name: 'user_address',
             type: 'varchar',
             default: '0',
@@ -58,7 +63,5 @@ export class userHistories1646381336601 implements MigrationInterface {
     );
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-  }
-
+  public async down(queryRunner: QueryRunner): Promise<void> {}
 }
