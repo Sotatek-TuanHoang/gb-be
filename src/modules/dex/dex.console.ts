@@ -84,12 +84,18 @@ export class DexConsole {
       }
     };
 
-    await crawlByMethodName(
-      this.web3,
-      this.chainInfoRepository,
-      eventHandler,
-      address.routerAddress,
-    );
+    const chainInfos = await this.chainInfoRepository.find();
+    const crawlerBlock = chainInfos.map(async (chainInfo) => {
+      return await crawlByMethodName(
+        this.web3,
+        this.chainInfoRepository,
+        eventHandler,
+        address.routerAddress,
+        chainInfo,
+      );
+    });
+
+    await Promise.all(crawlerBlock);
   }
 
   @Command({

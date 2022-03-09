@@ -3,16 +3,38 @@ const InputDataDecoder = require('ethereum-input-data-decoder');
 import { ChainInfoRepository } from '../../models/repositories/chain-info.repository';
 import { ABI } from 'src/shares/abis/pair';
 import { MethodName } from '../enums/method-name.enum';
+import { ChainInfoEntity } from '../../models/entities/chain-info.entity';
 
-// const BLOCK_TIME = 3000;
+const BLOCK_TIME = 1000;
 const STEP_BLOCK = 1;
 const decoder = new InputDataDecoder(ABI);
 const NULL_ADDRESS =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-// function sleep(ms: number): Promise<void> {
-//   return new Promise((resolve) => setTimeout(resolve, ms));
-// }
+const inputsDecodeLog = [
+  {
+    indexed: true,
+    internalType: 'address',
+    name: 'from',
+    type: 'address',
+  },
+  {
+    indexed: true,
+    internalType: 'address',
+    name: 'to',
+    type: 'address',
+  },
+  {
+    indexed: false,
+    internalType: 'uint256',
+    name: 'value',
+    type: 'uint256',
+  },
+];
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export async function crawlByMethodName(
   // eslint-disable-next-line
@@ -21,13 +43,13 @@ export async function crawlByMethodName(
   // eslint-disable-next-line
   callback: (event) => void,
   contractAddress: string,
+  chainInfo: ChainInfoEntity,
 ): Promise<void> {
   let cursor = 0;
 
-  const chainInfos = await chain_infos.findOne({ id: 1 });
-  if (chainInfos.current_block) cursor = Number(chainInfos.current_block);
+  if (chainInfo.current_block) cursor = Number(chainInfo.current_block);
 
-  while (cursor <= Number(chainInfos.max_block)) {
+  while (cursor <= Number(chainInfo.max_block)) {
     cursor = Math.min(cursor + STEP_BLOCK, await web3.eth.getBlockNumber());
     const block = await web3.eth.getBlock(cursor);
     const transactionsP = [...block.transactions].map(async (tx) => {
@@ -53,26 +75,7 @@ export async function crawlByMethodName(
             break;
           case MethodName.ADD_LIQUIDITY_ETH: {
             const decodeLogs = web3.eth.abi.decodeLog(
-              [
-                {
-                  indexed: true,
-                  internalType: 'address',
-                  name: 'from',
-                  type: 'address',
-                },
-                {
-                  indexed: true,
-                  internalType: 'address',
-                  name: 'to',
-                  type: 'address',
-                },
-                {
-                  indexed: false,
-                  internalType: 'uint256',
-                  name: 'value',
-                  type: 'uint256',
-                },
-              ],
+              inputsDecodeLog,
               transferLog[0].data,
               [transferLog[0].topics[1], transferLog[0].topics[2]],
             );
@@ -84,26 +87,7 @@ export async function crawlByMethodName(
             break;
           case MethodName.ADD_LIQUIDITY: {
             const decodeLogs = web3.eth.abi.decodeLog(
-              [
-                {
-                  indexed: true,
-                  internalType: 'address',
-                  name: 'from',
-                  type: 'address',
-                },
-                {
-                  indexed: true,
-                  internalType: 'address',
-                  name: 'to',
-                  type: 'address',
-                },
-                {
-                  indexed: false,
-                  internalType: 'uint256',
-                  name: 'value',
-                  type: 'uint256',
-                },
-              ],
+              inputsDecodeLog,
               transferLog[0].data,
               [transferLog[0].topics[1], transferLog[0].topics[2]],
             );
@@ -141,11 +125,10 @@ export async function crawlByMethodName(
     });
 
     await Promise.all(transactionsP);
-    await chain_infos.update({ id: 1 }, { current_block: String(cursor) });
-    await sleep(1000);
+    await chain_infos.update(
+      { id: chainInfo.id },
+      { current_block: String(cursor) },
+    );
+    await sleep(BLOCK_TIME);
   }
-}
-
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
