@@ -7,6 +7,8 @@ import { MethodName } from '../enums/method-name.enum';
 // const BLOCK_TIME = 3000;
 const STEP_BLOCK = 1;
 const decoder = new InputDataDecoder(ABI);
+const NULL_ADDRESS =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 // function sleep(ms: number): Promise<void> {
 //   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -39,11 +41,7 @@ export async function crawlByMethodName(
 
         const transferLog = [...logs].filter((log) => {
           return (
-            [...log.topics].findIndex(
-              (topic) =>
-                topic ===
-                '0x0000000000000000000000000000000000000000000000000000000000000000',
-            ) > -1
+            [...log.topics].findIndex((topic) => topic === NULL_ADDRESS) > -1
           );
         });
 
@@ -73,8 +71,8 @@ export async function crawlByMethodName(
                   type: 'uint256',
                 },
               ],
-              logs[5].data,
-              [logs[5].topics[1], logs[5].topics[2]],
+              transferLog[0].data,
+              [transferLog[0].topics[1], transferLog[0].topics[2]],
             );
             amount = decodeLogs['2'];
             break;
@@ -104,8 +102,8 @@ export async function crawlByMethodName(
                   type: 'uint256',
                 },
               ],
-              logs[2].data,
-              [logs[2].topics[1], logs[2].topics[2]],
+              transferLog[0].data,
+              [transferLog[0].topics[1], transferLog[0].topics[2]],
             );
             amount = decodeLogs['2'];
             break;
