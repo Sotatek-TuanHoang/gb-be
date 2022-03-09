@@ -37,9 +37,6 @@ export class DexConsole {
     description: 'Crawl event',
   })
   async handle(): Promise<void> {
-    // this.web3.setProvider(
-    //   new Web3.providers.HttpProvider('https://rpc.xinfin.network/'),
-    // );
     const { address } = getConfig();
 
     const eventHandler = async (methodInfo): Promise<void> => {
