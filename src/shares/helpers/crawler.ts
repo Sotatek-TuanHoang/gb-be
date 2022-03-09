@@ -30,15 +30,9 @@ export async function crawlByMethodName(
     const block = await web3.eth.getBlock(cursor);
     const transactionsP = [...block.transactions].map(async (tx) => {
       const txR = await web3.eth.getTransactionReceipt(tx);
-      console.log('contractAddress ===========================+>', {
-        contractAddress,
-      });
       if (txR.status && txR?.to === contractAddress.toLowerCase()) {
-        console.log("In hereeeeeeeeeeeeeeeeeeeeee");
         const txT = await web3.eth.getTransaction(tx);
         const { method, inputs } = decoder.decodeData(txT.input);
-
-        console.log('====================>', { method, inputs });
 
         const logs = txR.logs;
         let amount;
@@ -148,7 +142,7 @@ export async function crawlByMethodName(
 
     await Promise.all(transactionsP);
     await chain_infos.update({ id: 1 }, { current_block: String(cursor) });
-    await sleep(1000);
+    // await sleep(1000);
   }
 }
 
