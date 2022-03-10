@@ -47,7 +47,7 @@ export async function crawlByMethodName(
 
         switch (method) {
           case MethodName.REMOVE_LIQUIDITY_ETH:
-            amount = inputs[3].toString();
+            amount = inputs[1].toString();
             break;
           case MethodName.ADD_LIQUIDITY_ETH: {
             const decodeLogs = web3.eth.abi.decodeLog(
@@ -78,7 +78,7 @@ export async function crawlByMethodName(
             break;
           }
           case MethodName.REMOVE_LIQUIDITY:
-            amount = inputs[3].toString();
+            amount = inputs[2].toString();
             break;
           case MethodName.ADD_LIQUIDITY: {
             const decodeLogs = web3.eth.abi.decodeLog(
