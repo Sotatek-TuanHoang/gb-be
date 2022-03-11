@@ -353,7 +353,12 @@ export class DexService {
     ]);
 
     return {
-      reward: userReward,
+      reward: userReward.map((data) => {
+        delete data.signed_tx1;
+        delete data.signed_tx2;
+        delete data.note;
+        return data;
+      }),
       histories: userHistories,
     };
   }
@@ -443,7 +448,12 @@ export class DexService {
       }
     }
     await this.userInfoRepo.save(dataReturn);
-    return dataReturn;
+    return dataReturn.map((data) => {
+      delete data.signed_tx1;
+      delete data.signed_tx2;
+      delete data.note;
+      return data;
+    });
   }
 
   async updateDataBeforeClaim(userAddress: string): Promise<boolean> {
