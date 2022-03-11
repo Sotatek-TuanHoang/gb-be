@@ -28,7 +28,7 @@
 
 ## Installation
 1. create .env file and fill value:
-```
+```bash
 $ cp .env.example .env
 ```
 
@@ -50,6 +50,15 @@ $ yarn start:dev
 
 # production mode
 $ yarn start:prod
+```
+
+## Running Job (required)
+```bash
+# Job crawl staking reward event
+$ yarn console:dev crawl-dex
+
+# Job handle user claim reward request
+$ yarn console:dev claim-reward
 ```
 
 ## Support
