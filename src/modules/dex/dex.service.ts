@@ -89,6 +89,30 @@ export class DexService {
     return true;
   }
 
+  async calculateScore(
+    fromBlock: BigNumber,
+    toBlock: BigNumber,
+    convertScore: BigNumber,
+  ): Promise<BigNumber> {
+    let rewardScoreInit = new BigNumber('100');
+    const step = new BigNumber('100');
+    let score = new BigNumber('0');
+    let blockNum = toBlock.minus(fromBlock);
+    while (blockNum.gt(0)) {
+      const scorePerBlock = rewardScoreInit.div(step);
+
+      if (blockNum.minus(step).gt(0)) {
+        score = score.plus(step.times(scorePerBlock));
+        blockNum = blockNum.minus(step);
+        rewardScoreInit = rewardScoreInit.div(2);
+        continue;
+      }
+      score = score.plus(blockNum.times(scorePerBlock));
+      blockNum = blockNum.minus(step);
+    }
+    return score.times(convertScore);
+  }
+
   async getMultiplier(
     poolId: number,
     from: BigNumber,
@@ -106,7 +130,14 @@ export class DexService {
     const startBlock = new BigNumber(poolInfo.start_block);
     const firstRange = period.minus(from.minus(startBlock).mod(period));
     const multiplierRange = to.minus(from);
-
+    // console.log(scorePerBlock.toString(), 'scorePerBlock');
+    // console.log(startBlock.toString(), 'startBlock');
+    // console.log(period.toString(), 'period');
+    // console.log(firstRange.toString(), 'firstRange');
+    // console.log(multiplierRange.toString(), 'multiplierRange');
+    // console.log(from.toString(), 'from');
+    // console.log(to.toString(), 'to');
+    // throw Error('ok');
     //
     let multiplier = new BigNumber(0);
     let start = new BigNumber(from.toString());
@@ -119,6 +150,11 @@ export class DexService {
 
     multiplier = multiplier.plus(firstRange.multipliedBy(scorePerBlock));
     start = start.plus(firstRange);
+
+    // console.log(firstRange.toString());
+    // console.log(scorePerBlock.toString());
+    // console.log(multiplier.toString());
+    // throw Error('ngon');
 
     if (
       poolInfo.end_reduce_block == '0' ||
@@ -140,7 +176,7 @@ export class DexService {
       }
     }
 
-    result.multiplier = multiplier;
+    result.multiplier = await this.calculateScore(from, to, scorePerBlock);
     result.scorePerBlock = scorePerBlock;
 
     return result;
