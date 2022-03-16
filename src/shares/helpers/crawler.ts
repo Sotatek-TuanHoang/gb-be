@@ -58,8 +58,6 @@ export async function crawlByMethodName(
         const txT = await web3.eth.getTransaction(tx);
         const { method, inputs } = decoder.decodeData(txT.input);
 
-        console.log('====================>', { method, inputs });
-
         const logs = txR.logs;
         let amount;
 

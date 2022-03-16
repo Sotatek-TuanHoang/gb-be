@@ -360,7 +360,12 @@ export class DexService {
     ]);
 
     return {
-      reward: userReward,
+      reward: userReward.map((data) => {
+        delete data.signed_tx1;
+        delete data.signed_tx2;
+        delete data.note;
+        return data;
+      }),
       histories: userHistories,
     };
   }
@@ -427,7 +432,7 @@ export class DexService {
           .transfer(claim.user_address, claim.pending_reward_2)
           .encodeABI();
         const rawTx2 = {
-          nonce: this.web3.utils.toHex(count),
+          nonce: this.web3.utils.toHex(count + 1),
           gasLimit: this.web3.utils.toHex(2000000),
           gasPrice: this.web3.utils.toHex(gasPrice),
           data: data2,
@@ -450,7 +455,12 @@ export class DexService {
       }
     }
     await this.userInfoRepo.save(dataReturn);
-    return dataReturn;
+    return dataReturn.map((data) => {
+      delete data.signed_tx1;
+      delete data.signed_tx2;
+      delete data.note;
+      return data;
+    });
   }
 
   async updateDataBeforeClaim(userAddress: string): Promise<boolean> {
