@@ -46,7 +46,7 @@ export class DexService {
     if (new BigNumber(userInfo.amount).gt('0')) {
       await this.updateUser(poolId, userAddress, blockNumber);
       // claim last reward
-      await this.calculateReward(poolId, userAddress, blockNumber);
+      // await this.calculateReward(poolId, userAddress, blockNumber);
       userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     } else {
       userInfo.last_block = blockNumber;
@@ -74,7 +74,7 @@ export class DexService {
   ): Promise<boolean> {
     await this.updatePool(poolId, blockNumber);
     await this.updateUser(poolId, userAddress, blockNumber);
-    await this.calculateReward(poolId, userAddress, blockNumber);
+    // await this.calculateReward(poolId, userAddress, blockNumber);
     const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
@@ -99,6 +99,10 @@ export class DexService {
       multiplier: new BigNumber('0'),
       scorePerBlock: scorePerBlock,
     };
+
+    console.log("from", from.toString());
+    console.log("to", to.toString());
+    console.log("scorePerBlock", scorePerBlock.toString());
 
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     const period = new BigNumber(poolInfo.period);
@@ -127,7 +131,7 @@ export class DexService {
       scorePerBlock = scorePerBlock.multipliedBy(rate).div(BONE);
     }
 
-    while (start.gt(to)) {
+    while (start.lt(to)) {
       if (start.plus(period).gte(to)) {
         multiplier = multiplier.plus(
           to.minus(start).multipliedBy(scorePerBlock),
@@ -163,6 +167,9 @@ export class DexService {
       new BigNumber(blockNumber),
       new BigNumber(poolInfo.score_per_block),
     );
+
+    console.log("=============================++++>", dataMultiplier.multiplier.toString());
+    console.log("=============================++++>", dataMultiplier.scorePerBlock.toString());
 
     poolInfo.total_score = new BigNumber(poolInfo.total_score)
       .plus(
