@@ -46,7 +46,7 @@ export class DexService {
     if (new BigNumber(userInfo.amount).gt('0')) {
       await this.updateUser(poolId, userAddress, blockNumber);
       // claim last reward
-      // await this.calculateReward(poolId, userAddress, blockNumber);
+      await this.calculateReward(poolId, userAddress, blockNumber);
       userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     } else {
       userInfo.last_block = blockNumber;
@@ -74,7 +74,7 @@ export class DexService {
   ): Promise<boolean> {
     await this.updatePool(poolId, blockNumber);
     await this.updateUser(poolId, userAddress, blockNumber);
-    // await this.calculateReward(poolId, userAddress, blockNumber);
+    await this.calculateReward(poolId, userAddress, blockNumber);
     const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
