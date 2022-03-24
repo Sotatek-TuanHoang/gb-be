@@ -100,51 +100,75 @@ export class DexService {
       scorePerBlock: scorePerBlock,
     };
 
-    console.log("from", from.toString());
-    console.log("to", to.toString());
-    console.log("scorePerBlock", scorePerBlock.toString());
-
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
     const period = new BigNumber(poolInfo.period);
     const rate = new BigNumber(poolInfo.reduction_rate);
     const startBlock = new BigNumber(poolInfo.start_block);
-    const firstRange = period.minus(from.minus(startBlock).mod(period));
-    const multiplierRange = to.minus(from);
 
-    //
-    let multiplier = new BigNumber(0);
-    let start = new BigNumber(from.toString());
-    if (firstRange.gte(multiplierRange)) {
-      result.multiplier = multiplier.plus(
-        to.minus(start).multipliedBy(scorePerBlock),
-      );
-      return result;
-    }
-
-    multiplier = multiplier.plus(firstRange.multipliedBy(scorePerBlock));
-    start = start.plus(firstRange);
-
-    if (
-      poolInfo.end_reduce_block == '0' ||
-      new BigNumber(poolInfo.end_reduce_block).gt(start)
-    ) {
-      scorePerBlock = scorePerBlock.multipliedBy(rate).div(BONE);
-    }
-
-    while (start.lt(to)) {
-      if (start.plus(period).gte(to)) {
-        multiplier = multiplier.plus(
-          to.minus(start).multipliedBy(scorePerBlock),
+    let score = new BigNumber('0');
+    const numBlockFromFirstRange = new BigNumber(from).minus(
+      poolInfo.start_block,
+    );
+    const numBlockFromSecondRange = new BigNumber(to).minus(
+      poolInfo.start_block,
+    );
+    let scoreReward = new BigNumber('10').pow(18).times(1000);
+    let currentBlock = new BigNumber('1');
+    let currentBlockLevel = new BigNumber('1000');
+    const step = new BigNumber('1000');
+    while (currentBlock.lte(numBlockFromSecondRange)) {
+      if (currentBlock.gt(currentBlockLevel)) {
+        scoreReward = scoreReward.minus(
+          scoreReward.minus(poolInfo.reduction_rate),
         );
-        break;
-      } else {
-        multiplier = multiplier.plus(period.multipliedBy(scorePerBlock));
-        start = start.plus(period);
-        scorePerBlock = scorePerBlock.multipliedBy(rate).div(BONE);
+        currentBlockLevel = currentBlockLevel.plus(step);
       }
-    }
 
-    result.multiplier = multiplier;
+      if (
+        currentBlock.gte(numBlockFromFirstRange) &&
+        currentBlock.lte(numBlockFromSecondRange)
+      ) {
+        score = score.plus(scoreReward);
+      }
+      currentBlock = currentBlock.plus(1);
+    }
+    // const firstRange = period.minus(from.minus(startBlock).mod(period));
+    // const multiplierRange = to.minus(from);
+    //
+    // //
+    // let multiplier = new BigNumber(0);
+    // let start = new BigNumber(from.toString());
+    // if (firstRange.gte(multiplierRange)) {
+    //   result.multiplier = multiplier.plus(
+    //     to.minus(start).multipliedBy(scorePerBlock),
+    //   );
+    //   return result;
+    // }
+    //
+    // multiplier = multiplier.plus(firstRange.multipliedBy(scorePerBlock));
+    // start = start.plus(firstRange);
+    //
+    // if (
+    //   poolInfo.end_reduce_block == '0' ||
+    //   new BigNumber(poolInfo.end_reduce_block).gt(start)
+    // ) {
+    //   scorePerBlock = scorePerBlock.multipliedBy(rate).div(BONE);
+    // }
+    //
+    // while (start.lt(to)) {
+    //   if (start.plus(period).gte(to)) {
+    //     multiplier = multiplier.plus(
+    //       to.minus(start).multipliedBy(scorePerBlock),
+    //     );
+    //     break;
+    //   } else {
+    //     multiplier = multiplier.plus(period.multipliedBy(scorePerBlock));
+    //     start = start.plus(period);
+    //     scorePerBlock = scorePerBlock.multipliedBy(rate).div(BONE);
+    //   }
+    // }
+
+    result.multiplier = score;
     result.scorePerBlock = scorePerBlock;
 
     return result;
