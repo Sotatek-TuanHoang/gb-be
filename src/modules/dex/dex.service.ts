@@ -123,6 +123,9 @@ export class DexService {
         );
         currentBlockLevel = currentBlockLevel.plus(step);
       }
+      if (currentBlock.gt(poolInfo.end_reduce_block)) {
+        scoreReward = new BigNumber('0');
+      }
 
       if (
         currentBlock.gte(numBlockFromFirstRange) &&
