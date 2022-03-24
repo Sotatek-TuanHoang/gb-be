@@ -112,7 +112,7 @@ export class DexService {
     const numBlockFromSecondRange = new BigNumber(to).minus(
       poolInfo.start_block,
     );
-    let scoreReward = new BigNumber('10').pow(18).times(1000);
+    let scoreReward = new BigNumber('10').pow(18);
     let currentBlock = new BigNumber('1');
     let currentBlockLevel = new BigNumber('1000');
     const step = new BigNumber('1000');
