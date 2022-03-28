@@ -1,6 +1,7 @@
 // eslint-disable-next-line
 const Web3 = require('xdc3');
 import * as EthereumTx from 'ethereumjs-tx';
+import BigNumber from 'bignumber.js';
 import { UserInfoStatus } from '../../models/entities/user-info.entity';
 import { Command, Console } from 'nestjs-console';
 import { Injectable, Logger } from '@nestjs/common';
@@ -62,34 +63,65 @@ export class DexConsole {
         action: method,
         amount,
       });
+    };
+
+    const chainInfos = await this.chainInfoRepository.find();
+
+    const crawlerBlock = chainInfos.map(async (chainInfo) => {
+      return await crawlByMethodName(
+        this.web3,
+        this.chainInfoRepository,
+        eventHandler,
+        address.routerAddress,
+        chainInfo,
+      );
+    });
+
+    await Promise.all(crawlerBlock);
+
+    const usersHistory = await this.userHistoryRepository.find({
+      order: { last_block: 'ASC' },
+    });
+
+    const usersHistoryContract = await usersHistory.map(async (userHistory) => {
+      const {
+        action,
+        pool_address,
+        user_address,
+        amount,
+        last_block,
+      } = userHistory;
+
+      const poolInfos = await this.poolInfoRepository.findOne({
+        lp_token: pool_address,
+      });
 
       if (!poolInfos) return;
 
-      switch (method) {
+      switch (action) {
         case MethodName.ADD_LIQUIDITY:
         case MethodName.ADD_LIQUIDITY_ETH:
-          await this.dexService.stake(poolInfos.id, from, amount, blockNumber);
+          await this.dexService.stake(
+            poolInfos.id,
+            user_address,
+            new BigNumber(amount),
+            last_block,
+          );
           break;
         case MethodName.REMOVE_LIQUIDITY:
         case MethodName.REMOVE_LIQUIDITY_ETH:
           await this.dexService.unstake(
             poolInfos.id,
-            from,
-            amount,
-            blockNumber,
+            user_address,
+            new BigNumber(amount),
+            last_block,
           );
           break;
         default:
           break;
       }
-    };
-
-    await crawlByMethodName(
-      this.web3,
-      this.chainInfoRepository,
-      eventHandler,
-      address.routerAddress,
-    );
+    });
+    await Promise.all(usersHistoryContract);
   }
 
   @Command({
