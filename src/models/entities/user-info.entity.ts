@@ -33,6 +33,12 @@ export class UserInfoEntity {
   last_block: string;
 
   @Column()
+  current_period: string;
+
+  @Column()
+  current_score_per_block: string;
+
+  @Column()
   amount: string;
 
   @Column()
