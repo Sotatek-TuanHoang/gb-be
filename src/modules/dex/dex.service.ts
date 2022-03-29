@@ -123,6 +123,22 @@ export class DexService {
     userInfo.last_block = blockNumber;
     userInfo.current_score_per_block = scorePerBlock.toString();
     userInfo.current_period = period.toString();
+
+    const maxBlock = await this.chainInfoRepo.findOne({ id: 2 });
+    const totalBlock = new BigNumber(maxBlock.max_block).minus(
+      poolInfo.start_block,
+    );
+    const totalRw1 = totalBlock.times(poolInfo.reward_per_block_1);
+    const totalRw2 = totalBlock.times(poolInfo.reward_per_block_2);
+    userInfo.pending_reward_1 = totalRw1
+      .times(userInfo.score)
+      .div(poolInfo.total_score)
+      .toString();
+    userInfo.pending_reward_2 = totalRw2
+      .times(userInfo.score)
+      .div(poolInfo.total_score)
+      .toString();
+
     await this.poolInfoRepo.save(poolInfo);
     return await this.userInfoRepo.save(userInfo);
   }
@@ -152,28 +168,6 @@ export class DexService {
     };
   }
 
-  async calculateRewardUserInfo(
-    userInfos: UserInfoEntity[],
-  ): Promise<UserInfoEntity[]> {
-    userInfos.map(async (userInfo) => {
-      const poolInfo = await this.poolInfoRepo.getPoolInfo(userInfo.pool_id);
-      const totalBlock = new BigNumber(userInfo.last_block).minus(
-        poolInfo.start_block,
-      );
-      const totalRw1 = totalBlock.times(poolInfo.reward_per_block_1);
-      const totalRw2 = totalBlock.times(poolInfo.reward_per_block_2);
-      userInfo.pending_reward_1 = totalRw1
-        .times(userInfo.score)
-        .div(poolInfo.total_score)
-        .toString();
-      userInfo.pending_reward_2 = totalRw2
-        .times(userInfo.score)
-        .div(poolInfo.total_score)
-        .toString();
-    });
-    return userInfos;
-  }
-
   async claim(userAddress: string): Promise<UserInfoEntity[]> {
     if (!(await this.updateDataBeforeClaim(userAddress))) {
       throw new HttpException('User is invalid', 400);
@@ -181,13 +175,12 @@ export class DexService {
     const matcherAddress = getConfig().get<string>('matcher_address');
     const chainId = getConfig().get<number>('chain_id');
     const gasPrice = this.web3.utils.toBN(await this.web3.eth.getGasPrice());
-    let dataClaim = await this.userInfoRepo.getDataClaimByUserAddress(
+    const dataClaim = await this.userInfoRepo.getDataClaimByUserAddress(
       userAddress,
     );
 
     if (dataClaim.length === 0) return [];
 
-    dataClaim = await this.calculateRewardUserInfo(dataClaim);
     const dataReturn = [];
     for (const claim of dataClaim) {
       const poolInfo = await this.poolInfoRepo.findOne(claim.pool_id);
