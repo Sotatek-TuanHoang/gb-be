@@ -44,13 +44,15 @@ export class DexService {
     poolInfo: PoolInfoEntity,
   ): Promise<UserInfoEntity> {
     let scorePerBlock = new BigNumber(poolInfo.score_per_block);
-    let period = new BigNumber(poolInfo.period);
+    let period = new BigNumber(poolInfo.period).plus(poolInfo.start_block);
     let currentBlock = new BigNumber(poolInfo.start_block).plus('1');
     while (currentBlock.lte(userInfo.last_block)) {
       if (currentBlock.gt(period)) {
-        period = period.plus(period);
+        period = period.plus(poolInfo.period);
         if (currentBlock.lte(poolInfo.end_reduce_block)) {
-          scorePerBlock = scorePerBlock.times(poolInfo.reduction_rate);
+          scorePerBlock = scorePerBlock.minus(
+            scorePerBlock.times(poolInfo.reduction_rate),
+          );
         }
       }
       currentBlock = currentBlock.plus('1');
@@ -75,7 +77,6 @@ export class DexService {
       if (amount.gt(userInfo.amount)) {
         throw Error('Not enough amount for un stake');
       }
-      userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
     }
 
     if (!userInfo) {
@@ -86,8 +87,6 @@ export class DexService {
       newUserInfo.amount = amount.toString();
       userInfo = await this.initUserInfo(newUserInfo, poolInfo);
       return await this.userInfoRepo.save(userInfo);
-    } else if (action === UserInfoAction.Stake) {
-      userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
     }
 
     let currentBlock = new BigNumber(userInfo.last_block).plus('1');
@@ -96,12 +95,16 @@ export class DexService {
 
     while (currentBlock.lte(blockNumber)) {
       if (currentBlock.gt(period)) {
-        period = period.plus(period);
+        period = period.plus(poolInfo.period);
         if (currentBlock.lte(poolInfo.end_reduce_block)) {
-          scorePerBlock = scorePerBlock.times(poolInfo.reduction_rate);
+          scorePerBlock = scorePerBlock.minus(
+            scorePerBlock.times(poolInfo.reduction_rate),
+          );
         }
       }
-      const userScorePlus = new BigNumber(userInfo.amount).times(scorePerBlock);
+      const userScorePlus = new BigNumber(userInfo.amount)
+        .times(scorePerBlock)
+        .div(new BigNumber(10).pow(18));
       userInfo.score = new BigNumber(userInfo.score)
         .plus(userScorePlus)
         .toString();
@@ -109,6 +112,12 @@ export class DexService {
         .plus(userScorePlus)
         .toString();
       currentBlock = currentBlock.plus('1');
+    }
+
+    if (action === UserInfoAction.Stake) {
+      userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
+    } else {
+      userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
     }
 
     userInfo.last_block = blockNumber;
