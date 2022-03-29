@@ -47,13 +47,11 @@ export class DexService {
     let period = new BigNumber(poolInfo.period);
     let currentBlock = new BigNumber(poolInfo.start_block).plus('1');
     while (currentBlock.lte(userInfo.last_block)) {
-      if (currentBlock.gt(poolInfo.end_reduce_block)) {
-        scorePerBlock = new BigNumber('0');
-        break;
-      }
       if (currentBlock.gt(period)) {
         period = period.plus(period);
-        scorePerBlock = scorePerBlock.times(poolInfo.reduction_rate);
+        if (currentBlock.lte(poolInfo.end_reduce_block)) {
+          scorePerBlock = scorePerBlock.times(poolInfo.reduction_rate);
+        }
       }
       currentBlock = currentBlock.plus('1');
     }
@@ -87,7 +85,7 @@ export class DexService {
       newUserInfo.amount = amount.toString();
       userInfo = await this.initUserInfo(newUserInfo, poolInfo);
       return await this.userInfoRepo.save(userInfo);
-    } else {
+    } else if (action === UserInfoAction.Stake) {
       userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
     }
 
@@ -96,13 +94,11 @@ export class DexService {
     let period = new BigNumber(userInfo.current_period);
 
     while (currentBlock.lte(blockNumber)) {
-      if (currentBlock.gt(poolInfo.end_reduce_block)) {
-        scorePerBlock = new BigNumber('0');
-        break;
-      }
       if (currentBlock.gt(period)) {
         period = period.plus(period);
-        scorePerBlock = scorePerBlock.times(poolInfo.reduction_rate);
+        if (currentBlock.lte(poolInfo.end_reduce_block)) {
+          scorePerBlock = scorePerBlock.times(poolInfo.reduction_rate);
+        }
       }
       const userScorePlus = new BigNumber(userInfo.amount).times(scorePerBlock);
       userInfo.score = new BigNumber(userInfo.score)
@@ -154,8 +150,8 @@ export class DexService {
       const totalBlock = new BigNumber(userInfo.last_block).minus(
         poolInfo.start_block,
       );
-      const totalRw1 = totalBlock.times(poolInfo.reward_token_1);
-      const totalRw2 = totalBlock.times(poolInfo.reward_token_2);
+      const totalRw1 = totalBlock.times(poolInfo.reward_per_block_1);
+      const totalRw2 = totalBlock.times(poolInfo.reward_per_block_2);
       userInfo.pending_reward_1 = totalRw1
         .times(userInfo.score)
         .div(poolInfo.total_score)
