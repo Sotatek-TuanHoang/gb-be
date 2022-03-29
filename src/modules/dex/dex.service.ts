@@ -116,7 +116,7 @@ export class DexService {
 
     if (action === UserInfoAction.Stake) {
       userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
-    } else {
+    } else if (action === UserInfoAction.UnStake) {
       userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
     }
 
@@ -133,10 +133,12 @@ export class DexService {
     userInfo.pending_reward_1 = totalRw1
       .times(userInfo.score)
       .div(poolInfo.total_score)
+      .times(new BigNumber(10).pow(18))
       .toString();
     userInfo.pending_reward_2 = totalRw2
       .times(userInfo.score)
       .div(poolInfo.total_score)
+      .times(new BigNumber(10).pow(18))
       .toString();
 
     await this.poolInfoRepo.save(poolInfo);

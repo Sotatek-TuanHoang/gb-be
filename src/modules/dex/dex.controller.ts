@@ -20,6 +20,18 @@ export class DexController {
     return true;
   }
 
+  @Get('/end')
+  async noAction(@Query() params: StakeDto): Promise<boolean> {
+    await this.dexService.updateLPRewards(
+      params.poolId,
+      params.userAddress,
+      UserInfoAction.EndBlock,
+      new BigNumber(params.amount),
+      params.blockNumber,
+    );
+    return true;
+  }
+
   @Get('/unstake')
   async unstake(@Query() params: StakeDto): Promise<boolean> {
     await this.dexService.updateLPRewards(
