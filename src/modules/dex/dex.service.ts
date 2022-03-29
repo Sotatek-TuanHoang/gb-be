@@ -68,7 +68,7 @@ export class DexService {
     blockNumber: string,
   ): Promise<UserInfoEntity> {
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    let userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
+    let userInfo = await this.userInfoRepo.getUserInfoV2(poolId, userAddress);
 
     if (action === UserInfoAction.UnStake) {
       if (!userInfo) throw Error('No Data For UnStake');
@@ -82,6 +82,7 @@ export class DexService {
       const newUserInfo = new UserInfoEntity();
       newUserInfo.last_block = blockNumber;
       newUserInfo.user_address = userAddress;
+      newUserInfo.pool_id = poolId;
       newUserInfo.amount = amount.toString();
       userInfo = await this.initUserInfo(newUserInfo, poolInfo);
       return await this.userInfoRepo.save(userInfo);
