@@ -84,7 +84,7 @@ export class DexConsole {
       order: { last_block: 'ASC' },
     });
 
-    const usersHistoryContract = usersHistory.map(async (userHistory) => {
+    for (const userHistory of usersHistory) {
       const {
         action,
         pool_address,
@@ -123,8 +123,7 @@ export class DexConsole {
         default:
           break;
       }
-    });
-    await Promise.all(usersHistoryContract);
+    }
 
     const userInfos = await this.userInfoRepository.find();
     const userInfosProcess = userInfos.map(async (userInfo) => {
