@@ -9,12 +9,17 @@ import { ChainInfoRepository } from 'src/models/repositories/chain-info.reposito
 import { PoolInfoRepository } from 'src/models/repositories/pool-info.repository';
 import { UserHistoryRepository } from 'src/models/repositories/user-history.repository';
 import { UserInfoRepository } from 'src/models/repositories/user-info.repository';
-import { BONE, MIN_SCORE_PER_BLOCK } from 'src/modules/dex/dex.const';
+import {
+  BONE,
+  MIN_SCORE_PER_BLOCK,
+  UserInfoAction,
+} from 'src/modules/dex/dex.const';
 import { erc20ABI } from 'src/shares/abis/common-abi';
 import { getConfig } from 'src/configs';
 // eslint-disable-next-line
 const Web3 = require('xdc3');
 import * as EthereumTx from 'ethereumjs-tx';
+import { PoolInfoEntity } from 'src/models/entities/pool-info.entity';
 
 @Injectable()
 export class DexService {
@@ -34,315 +39,110 @@ export class DexService {
     this.web3.setProvider(new Web3.providers.HttpProvider(xinFinRpc));
   }
 
-  async stake(
-    poolId: number,
-    userAddress: string,
-    amount: BigNumber,
-    blockNumber: string,
-  ): Promise<boolean> {
-    await this.updatePool(poolId, blockNumber);
-    let userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
-    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    if (new BigNumber(userInfo.amount).gt('0')) {
-      await this.updateUser(poolId, userAddress, blockNumber);
-      // claim last reward
-      await this.calculateReward(poolId, userAddress, blockNumber);
-      userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
-    } else {
-      userInfo.last_block = blockNumber;
-      userInfo.reward_debt_1 = '0';
-      userInfo.reward_debt_2 = '0';
+  async initUserInfo(
+    userInfo: UserInfoEntity,
+    poolInfo: PoolInfoEntity,
+  ): Promise<UserInfoEntity> {
+    let scorePerBlock = new BigNumber(poolInfo.score_per_block);
+    let period = new BigNumber(poolInfo.period).plus(poolInfo.start_block);
+    let currentBlock = new BigNumber(poolInfo.start_block).plus('1');
+    while (currentBlock.lte(userInfo.last_block)) {
+      if (currentBlock.gt(period)) {
+        period = period.plus(poolInfo.period);
+        if (currentBlock.lte(poolInfo.end_reduce_block)) {
+          scorePerBlock = scorePerBlock.minus(
+            scorePerBlock.times(poolInfo.reduction_rate),
+          );
+        }
+      }
+      currentBlock = currentBlock.plus('1');
     }
-
-    poolInfo.lp_token_amount = new BigNumber(poolInfo.lp_token_amount)
-      .plus(amount)
-      .toString();
-    userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
-    await this.poolInfoRepo.save(poolInfo);
-    if (!userInfo.id) {
-      delete userInfo.id;
-    }
-    await this.userInfoRepo.save(userInfo);
-    return true;
+    userInfo.current_score_per_block = scorePerBlock.toString();
+    userInfo.current_period = period.toString();
+    return userInfo;
   }
 
-  async unstake(
+  async updateLPRewards(
     poolId: number,
     userAddress: string,
+    action: UserInfoAction,
     amount: BigNumber,
     blockNumber: string,
-  ): Promise<boolean> {
-    await this.updatePool(poolId, blockNumber);
-    await this.updateUser(poolId, userAddress, blockNumber);
-    await this.calculateReward(poolId, userAddress, blockNumber);
-    const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
+  ): Promise<UserInfoEntity> {
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
-    poolInfo.lp_token_amount = new BigNumber(poolInfo.lp_token_amount)
-      .minus(amount)
-      .toString();
-    await this.poolInfoRepo.save(poolInfo);
-    if (!userInfo.id) {
-      delete userInfo.id;
-    }
-    await this.userInfoRepo.save(userInfo);
-    return true;
-  }
+    let userInfo = await this.userInfoRepo.getUserInfoV2(poolId, userAddress);
 
-  async getMultiplier(
-    poolId: number,
-    from: BigNumber,
-    to: BigNumber,
-    scorePerBlock: BigNumber,
-  ): Promise<{ multiplier: BigNumber; scorePerBlock: BigNumber }> {
-    const result = {
-      multiplier: new BigNumber('0'),
-      scorePerBlock: scorePerBlock,
-    };
-
-    console.log("from", from.toString());
-    console.log("to", to.toString());
-    console.log("scorePerBlock", scorePerBlock.toString());
-
-    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    const period = new BigNumber(poolInfo.period);
-    const rate = new BigNumber(poolInfo.reduction_rate);
-    const startBlock = new BigNumber(poolInfo.start_block);
-    const firstRange = period.minus(from.minus(startBlock).mod(period));
-    const multiplierRange = to.minus(from);
-
-    //
-    let multiplier = new BigNumber(0);
-    let start = new BigNumber(from.toString());
-    if (firstRange.gte(multiplierRange)) {
-      result.multiplier = multiplier.plus(
-        to.minus(start).multipliedBy(scorePerBlock),
-      );
-      return result;
-    }
-
-    multiplier = multiplier.plus(firstRange.multipliedBy(scorePerBlock));
-    start = start.plus(firstRange);
-
-    if (
-      poolInfo.end_reduce_block == '0' ||
-      new BigNumber(poolInfo.end_reduce_block).gt(start)
-    ) {
-      scorePerBlock = scorePerBlock.multipliedBy(rate).div(BONE);
-    }
-
-    while (start.lt(to)) {
-      if (start.plus(period).gte(to)) {
-        multiplier = multiplier.plus(
-          to.minus(start).multipliedBy(scorePerBlock),
-        );
-        break;
-      } else {
-        multiplier = multiplier.plus(period.multipliedBy(scorePerBlock));
-        start = start.plus(period);
-        scorePerBlock = scorePerBlock.multipliedBy(rate).div(BONE);
+    if (action === UserInfoAction.UnStake) {
+      if (!userInfo) throw Error('No Data For UnStake');
+      if (amount.gt(userInfo.amount)) {
+        throw Error('Not enough amount for un stake');
       }
     }
 
-    result.multiplier = multiplier;
-    result.scorePerBlock = scorePerBlock;
-
-    return result;
-  }
-
-  async updatePool(poolId: number, blockNumber: string): Promise<boolean> {
-    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    if (blockNumber <= poolInfo.last_reward_block) {
-      return true;
-    }
-    if (poolInfo.lp_token_amount == '0') {
-      poolInfo.last_reward_block = blockNumber;
-      await this.poolInfoRepo.save(poolInfo);
-      return true;
+    if (!userInfo) {
+      const newUserInfo = new UserInfoEntity();
+      newUserInfo.last_block = blockNumber;
+      newUserInfo.user_address = userAddress;
+      newUserInfo.pool_id = poolId;
+      newUserInfo.amount = amount.toString();
+      userInfo = await this.initUserInfo(newUserInfo, poolInfo);
+      return await this.userInfoRepo.save(userInfo);
     }
 
-    const dataMultiplier = await this.getMultiplier(
-      poolId,
-      new BigNumber(poolInfo.last_reward_block),
-      new BigNumber(blockNumber),
-      new BigNumber(poolInfo.score_per_block),
-    );
+    let currentBlock = new BigNumber(userInfo.last_block).plus('1');
+    let scorePerBlock = new BigNumber(userInfo.current_score_per_block);
+    let period = new BigNumber(userInfo.current_period);
 
-    console.log("=============================++++>", dataMultiplier.multiplier.toString());
-    console.log("=============================++++>", dataMultiplier.scorePerBlock.toString());
+    while (currentBlock.lte(blockNumber)) {
+      if (currentBlock.gt(period)) {
+        period = period.plus(poolInfo.period);
+        if (currentBlock.lte(poolInfo.end_reduce_block)) {
+          scorePerBlock = scorePerBlock.minus(
+            scorePerBlock.times(poolInfo.reduction_rate),
+          );
+        }
+      }
+      const userScorePlus = new BigNumber(userInfo.amount)
+        .times(scorePerBlock)
+        .div(new BigNumber(10).pow(18));
+      userInfo.score = new BigNumber(userInfo.score)
+        .plus(userScorePlus)
+        .toString();
+      poolInfo.total_score = new BigNumber(poolInfo.total_score)
+        .plus(userScorePlus)
+        .toString();
+      currentBlock = currentBlock.plus('1');
+    }
 
-    poolInfo.total_score = new BigNumber(poolInfo.total_score)
-      .plus(
-        new BigNumber(poolInfo.lp_token_amount)
-          .multipliedBy(dataMultiplier.multiplier)
-          .div(BONE),
-      )
-      .toString();
-    poolInfo.last_reward_block = blockNumber;
-    poolInfo.score_per_block = (dataMultiplier.scorePerBlock.gt(
-      MIN_SCORE_PER_BLOCK,
-    )
-      ? dataMultiplier.scorePerBlock
-      : MIN_SCORE_PER_BLOCK
-    ).toString();
-    await this.poolInfoRepo.save(poolInfo);
-    return true;
-  }
+    if (action === UserInfoAction.Stake) {
+      userInfo.amount = new BigNumber(userInfo.amount).plus(amount).toString();
+    } else if (action === UserInfoAction.UnStake) {
+      userInfo.amount = new BigNumber(userInfo.amount).minus(amount).toString();
+    }
 
-  async updateLpAmount(poolId: number, amount: BigNumber): Promise<void> {
-    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    poolInfo.lp_token_amount = amount.plus(poolInfo.lp_token_amount).toString();
-    await this.poolInfoRepo.save(poolInfo);
-  }
-
-  async updateUser(
-    poolId: number,
-    userAddress: string,
-    blockNumber: string,
-  ): Promise<void> {
-    const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
-    userInfo.score = (
-      await this.getUserScore(poolId, userAddress, userInfo, blockNumber)
-    ).toString();
     userInfo.last_block = blockNumber;
-    if (!userInfo.id) {
-      delete userInfo.id;
-    }
-    await this.userInfoRepo.save(userInfo);
-  }
+    userInfo.current_score_per_block = scorePerBlock.toString();
+    userInfo.current_period = period.toString();
 
-  async getUserScore(
-    poolId: number,
-    userAddress: string,
-    userInfo: UserInfoEntity,
-    blockNumber: string,
-  ): Promise<BigNumber> {
-    const userScorePerBlock = await this.userScorePerBlock(
-      poolId,
-      userAddress,
-      userInfo,
+    const maxBlock = await this.chainInfoRepo.findOne({ id: 2 });
+    const totalBlock = new BigNumber(maxBlock.max_block).minus(
+      poolInfo.start_block,
     );
-    const dataMultiplier = await this.getMultiplier(
-      poolId,
-      new BigNumber(userInfo.last_block),
-      new BigNumber(blockNumber),
-      userScorePerBlock,
-    );
-    const result = new BigNumber(userInfo.score).plus(
-      dataMultiplier.multiplier.multipliedBy(userInfo.amount).div(BONE),
-    );
-    return result;
-  }
-
-  async userScorePerBlock(
-    poolId: number,
-    userAddress: string,
-    userInfo: UserInfoEntity,
-  ): Promise<BigNumber> {
-    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    let currentScorePerBlock = new BigNumber(poolInfo.score_per_block);
-    const residuals = new BigNumber(poolInfo.last_reward_block)
-      .minus(poolInfo.start_block)
-      .mod(poolInfo.period);
-    let end = new BigNumber(poolInfo.last_reward_block).minus(residuals);
-    if (new BigNumber(userInfo.last_block).gte(end)) {
-      return currentScorePerBlock;
-    }
-
-    while (
-      end.gt(poolInfo.period) &&
-      end.minus(poolInfo.period).gte(poolInfo.start_block)
-    ) {
-      if (
-        new BigNumber(poolInfo.end_reduce_block).isZero() ||
-        new BigNumber(poolInfo.end_reduce_block).gt(end)
-      ) {
-        currentScorePerBlock = currentScorePerBlock
-          .div(poolInfo.reduction_rate)
-          .multipliedBy(BONE);
-      }
-      if (
-        new BigNumber(userInfo.last_block).lte(end) &&
-        new BigNumber(userInfo.last_block).gt(end.minus(poolInfo.period))
-      ) {
-        return currentScorePerBlock;
-        break;
-      } else {
-        end = end.minus(poolInfo.period);
-      }
-    }
-
-    return currentScorePerBlock;
-  }
-
-  async calculateReward(
-    poolId: number,
-    userAddress: string,
-    blockNumber: string,
-  ): Promise<boolean> {
-    const userInfo = await this.userInfoRepo.getUserInfo(poolId, userAddress);
-    const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
-    const userScorePerBlock = await this.userScorePerBlock(
-      poolId,
-      userAddress,
-      userInfo,
-    );
-    const poolMultiplier = await this.getMultiplier(
-      poolId,
-      new BigNumber(poolInfo.last_reward_block),
-      new BigNumber(blockNumber),
-      new BigNumber(poolInfo.score_per_block),
-    );
-    const userMultiplier = await this.getMultiplier(
-      poolId,
-      new BigNumber(userInfo.last_block),
-      new BigNumber(blockNumber),
-      userScorePerBlock,
-    );
-    const userScore = userMultiplier.multiplier
-      .multipliedBy(userInfo.amount)
-      .div(BONE)
-      .plus(userInfo.score);
-    const totalScore = poolMultiplier.multiplier
-      .multipliedBy(poolInfo.lp_token_amount)
-      .div(BONE)
-      .plus(poolInfo.total_score);
-    const reward_1 = new BigNumber(blockNumber)
-      .minus(poolInfo.start_block)
-      .multipliedBy(poolInfo.reward_per_block_1);
-    const reward_2 = new BigNumber(blockNumber)
-      .minus(poolInfo.start_block)
-      .multipliedBy(poolInfo.reward_per_block_2);
-
-    const userRewardAll_1 = reward_1.multipliedBy(userScore).div(totalScore);
-    const userRewardAll_2 = reward_2.multipliedBy(userScore).div(totalScore);
-
-    const userReward_1 = userRewardAll_1.gte(userInfo.reward_debt_1)
-      ? userRewardAll_1.minus(userInfo.reward_debt_1)
-      : new BigNumber(0);
-    const userReward_2 = userRewardAll_2.gte(userInfo.reward_debt_2)
-      ? userRewardAll_2.minus(userInfo.reward_debt_2)
-      : new BigNumber(0);
-
-    userInfo.pending_reward_1 = userReward_1
-      .plus(userInfo.pending_reward_1)
+    const totalRw1 = totalBlock.times(poolInfo.reward_per_block_1);
+    const totalRw2 = totalBlock.times(poolInfo.reward_per_block_2);
+    userInfo.pending_reward_1 = totalRw1
+      .times(userInfo.score)
+      .div(poolInfo.total_score)
+      .times(new BigNumber(10).pow(18))
       .toString();
-    userInfo.pending_reward_2 = userReward_2
-      .plus(userInfo.pending_reward_2)
-      .toString();
-    userInfo.reward_debt_1 = userReward_1
-      .plus(userInfo.reward_debt_1)
+    userInfo.pending_reward_2 = totalRw2
+      .times(userInfo.score)
+      .div(poolInfo.total_score)
+      .times(new BigNumber(10).pow(18))
       .toString();
 
-    userInfo.reward_debt_2 = userReward_2
-      .plus(userInfo.reward_debt_2)
-      .toString();
-
-    if (!userInfo.id) {
-      delete userInfo.id;
-    }
-    await this.userInfoRepo.save(userInfo);
-    return true;
+    await this.poolInfoRepo.save(poolInfo);
+    return await this.userInfoRepo.save(userInfo);
   }
 
   async getDataUser(userAddress: string): Promise<any> {
@@ -370,23 +170,12 @@ export class DexService {
     };
   }
 
-  // async getDataAllUser(page: number, limit: number, userAddress: string[]): Promise<any> {
-
-  // }
-
   async claim(userAddress: string): Promise<UserInfoEntity[]> {
     if (!(await this.updateDataBeforeClaim(userAddress))) {
       throw new HttpException('User is invalid', 400);
     }
     const matcherAddress = getConfig().get<string>('matcher_address');
     const chainId = getConfig().get<number>('chain_id');
-    // const _gasLimit = await contract.methods
-    //   .transfer(
-    //     'xdce861A5bfFAdE378166232a79289eb81E24c98fdf',
-    //     '1000000000000000000',
-    //   )
-    //   .estimateGas({ from: matcherAddress });
-    // const gasLimit = this.web3.utils.toBN(_gasLimit);
     const gasPrice = this.web3.utils.toBN(await this.web3.eth.getGasPrice());
     const dataClaim = await this.userInfoRepo.getDataClaimByUserAddress(
       userAddress,
@@ -487,7 +276,13 @@ export class DexService {
     for (let i = 0; i < userData.length; i++) {
       const item = userData[i];
       if (item.last_block == maxBlock) continue;
-      await this.stake(item.pool_id, userAddress, new BigNumber(0), maxBlock);
+      await this.updateLPRewards(
+        item.pool_id,
+        userAddress,
+        UserInfoAction.Stake,
+        new BigNumber(0),
+        maxBlock,
+      );
     }
     return true;
   }

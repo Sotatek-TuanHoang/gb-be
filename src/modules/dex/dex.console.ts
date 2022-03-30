@@ -1,5 +1,6 @@
 // eslint-disable-next-line
 const Web3 = require('xdc3');
+import { UserInfoAction } from './dex.const';
 import * as EthereumTx from 'ethereumjs-tx';
 import BigNumber from 'bignumber.js';
 import { UserInfoStatus } from '../../models/entities/user-info.entity';
@@ -101,18 +102,20 @@ export class DexConsole {
       switch (action) {
         case MethodName.ADD_LIQUIDITY:
         case MethodName.ADD_LIQUIDITY_ETH:
-          await this.dexService.stake(
+          await this.dexService.updateLPRewards(
             poolInfos.id,
             user_address,
+            UserInfoAction.Stake,
             new BigNumber(amount),
             last_block,
           );
           break;
         case MethodName.REMOVE_LIQUIDITY:
         case MethodName.REMOVE_LIQUIDITY_ETH:
-          await this.dexService.unstake(
+          await this.dexService.updateLPRewards(
             poolInfos.id,
             user_address,
+            UserInfoAction.UnStake,
             new BigNumber(amount),
             last_block,
           );
@@ -122,6 +125,18 @@ export class DexConsole {
       }
     });
     await Promise.all(usersHistoryContract);
+
+    const userInfos = await this.userInfoRepository.find();
+    const userInfosProcess = await userInfos.map(async (userInfo) => {
+      await this.dexService.updateLPRewards(
+        userInfo.pool_id,
+        userInfo.user_address,
+        UserInfoAction.EndBlock,
+        new BigNumber(userInfo.amount),
+        userInfo.last_block,
+      );
+    });
+    await Promise.all(userInfosProcess);
   }
 
   @Command({

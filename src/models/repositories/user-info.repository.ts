@@ -6,6 +6,18 @@ import {
 
 @EntityRepository(UserInfoEntity)
 export class UserInfoRepository extends Repository<UserInfoEntity> {
+  async getUserInfoV2(
+    poolId: number,
+    userAddress: string,
+  ): Promise<UserInfoEntity> {
+    return await this.findOne({
+      where: {
+        pool_id: poolId,
+        user_address: userAddress,
+      },
+    });
+  }
+
   async getUserInfo(
     poolId: number,
     userAddress: string,
@@ -30,6 +42,8 @@ export class UserInfoRepository extends Repository<UserInfoEntity> {
       pending_reward_1: '0',
       pending_reward_2: '0',
       last_block: '0',
+      current_period: '0',
+      current_score_per_block: '0',
       amount: '0',
       score: '0',
       status: UserInfoStatus.Pending,
