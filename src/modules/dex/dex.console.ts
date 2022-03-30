@@ -125,6 +125,18 @@ export class DexConsole {
       }
     });
     await Promise.all(usersHistoryContract);
+
+    const userInfos = await this.userInfoRepository.find();
+    const userInfosProcess = await userInfos.map(async (userInfo) => {
+      await this.dexService.updateLPRewards(
+        userInfo.pool_id,
+        userInfo.user_address,
+        UserInfoAction.EndBlock,
+        new BigNumber(userInfo.amount),
+        userInfo.last_block,
+      );
+    });
+    await Promise.all(userInfosProcess);
   }
 
   @Command({
