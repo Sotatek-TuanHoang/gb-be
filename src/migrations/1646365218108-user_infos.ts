@@ -118,6 +118,16 @@ export class userInfos1646365218108 implements MigrationInterface {
             isNullable: false,
             default: 'CURRENT_TIMESTAMP',
           },
+          {
+            name: 'current_period',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
+            name: 'current_score_per_block',
+            type: 'varchar',
+            isNullable: true,
+          },
         ],
       }),
     );
