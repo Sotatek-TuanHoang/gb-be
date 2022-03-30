@@ -64,75 +64,52 @@ export class DexConsole {
         action: method,
         amount,
       });
-    };
-
-    const chainInfos = await this.chainInfoRepository.find();
-
-    const crawlerBlock = chainInfos.map(async (chainInfo) => {
-      return await crawlByMethodName(
-        this.web3,
-        this.chainInfoRepository,
-        eventHandler,
-        address.routerAddress,
-        chainInfo,
-      );
-    });
-
-    await Promise.all(crawlerBlock);
-
-    const usersHistory = await this.userHistoryRepository.find({
-      order: { last_block: 'ASC' },
-    });
-
-    for (const userHistory of usersHistory) {
-      const {
-        action,
-        pool_address,
-        user_address,
-        amount,
-        last_block,
-      } = userHistory;
-
-      const poolInfos = await this.poolInfoRepository.findOne({
-        lp_token: pool_address,
-      });
 
       if (!poolInfos) return;
 
-      switch (action) {
+      switch (method) {
         case MethodName.ADD_LIQUIDITY:
         case MethodName.ADD_LIQUIDITY_ETH:
           await this.dexService.updateLPRewards(
             poolInfos.id,
-            user_address,
+            from,
             UserInfoAction.Stake,
             new BigNumber(amount),
-            last_block,
+            blockNumber,
           );
           break;
         case MethodName.REMOVE_LIQUIDITY:
         case MethodName.REMOVE_LIQUIDITY_ETH:
           await this.dexService.updateLPRewards(
             poolInfos.id,
-            user_address,
+            from,
             UserInfoAction.UnStake,
             new BigNumber(amount),
-            last_block,
+            blockNumber,
           );
           break;
         default:
           break;
       }
-    }
+    };
+
+    await crawlByMethodName(
+      this.web3,
+      this.chainInfoRepository,
+      eventHandler,
+      address.routerAddress,
+    );
 
     const userInfos = await this.userInfoRepository.find();
+    const chainInfo = await this.chainInfoRepository.findOne({ id: 1 });
+
     const userInfosProcess = userInfos.map(async (userInfo) => {
       await this.dexService.updateLPRewards(
         userInfo.pool_id,
         userInfo.user_address,
         UserInfoAction.EndBlock,
         new BigNumber(userInfo.amount),
-        userInfo.last_block,
+        chainInfo.max_block,
       );
     });
     await Promise.all(userInfosProcess);

@@ -3,7 +3,6 @@ const InputDataDecoder = require('ethereum-input-data-decoder');
 import { ChainInfoRepository } from '../../models/repositories/chain-info.repository';
 import { ABI } from 'src/shares/abis/pair';
 import { MethodName } from '../enums/method-name.enum';
-import { ChainInfoEntity } from '../../models/entities/chain-info.entity';
 
 // const BLOCK_TIME = 3000;
 const STEP_BLOCK = 1;
@@ -22,10 +21,9 @@ export async function crawlByMethodName(
   // eslint-disable-next-line
   callback: (event) => void,
   contractAddress: string,
-  chainInfo: ChainInfoEntity,
 ): Promise<void> {
   let cursor = 0;
-
+  const chainInfo = await chain_infos.findOne({ id: 1 });
   if (chainInfo.current_block) cursor = Number(chainInfo.current_block);
 
   while (cursor <= Number(chainInfo.max_block)) {
@@ -140,10 +138,7 @@ export async function crawlByMethodName(
     });
 
     await Promise.all(transactionsP);
-    await chain_infos.update(
-      { id: chainInfo.id },
-      { current_block: String(cursor) },
-    );
+    await chain_infos.update({ id: 1 }, { current_block: String(cursor) });
     // await sleep(1000);
   }
 }
