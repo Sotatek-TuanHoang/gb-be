@@ -124,7 +124,7 @@ export class DexService {
     userInfo.current_score_per_block = scorePerBlock.toString();
     userInfo.current_period = period.toString();
 
-    const maxBlock = await this.chainInfoRepo.findOne({ id: 1 });
+    const maxBlock = await this.chainInfoRepo.findOne({ id: 3 });
     const totalBlock = new BigNumber(maxBlock.max_block).minus(
       poolInfo.start_block,
     );
