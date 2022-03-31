@@ -70,6 +70,9 @@ export class DexService {
     blockNumber: string,
   ): Promise<UserInfoEntity> {
     const poolInfo = await this.poolInfoRepo.getPoolInfo(poolId);
+    poolInfo.end_reduce_block = new BigNumber(poolInfo.start_block)
+      .plus(poolInfo.end_reduce_block)
+      .toString();
     let userInfo = await this.userInfoRepo.getUserInfoV2(poolId, userAddress);
 
     if (action === UserInfoAction.UnStake) {
