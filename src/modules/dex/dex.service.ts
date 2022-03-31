@@ -136,12 +136,10 @@ export class DexService {
     userInfo.pending_reward_1 = totalRw1
       .times(userInfo.score)
       .div(poolInfo.total_score)
-      .times(new BigNumber(10).pow(18))
       .toString();
     userInfo.pending_reward_2 = totalRw2
       .times(userInfo.score)
       .div(poolInfo.total_score)
-      .times(new BigNumber(10).pow(18))
       .toString();
 
     poolInfo.end_reduce_block = new BigNumber(poolInfo.end_reduce_block)
