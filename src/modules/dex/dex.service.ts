@@ -144,6 +144,10 @@ export class DexService {
       .times(new BigNumber(10).pow(18))
       .toString();
 
+    poolInfo.end_reduce_block = new BigNumber(poolInfo.end_reduce_block)
+      .minus(poolInfo.start_block)
+      .toString();
+
     await this.poolInfoRepo.save(poolInfo);
     return await this.userInfoRepo.save(userInfo);
   }
