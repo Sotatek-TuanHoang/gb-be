@@ -103,7 +103,7 @@ export class DexConsole {
     const userInfos = await this.userInfoRepository.find();
     const chainInfo = await this.chainInfoRepository.findOne({ id: 1 });
 
-    const userInfosProcessScore = userInfos.map(async (userInfo) => {
+    for (const userInfo of userInfos) {
       await this.dexService.updateLPRewards(
         userInfo.pool_id,
         userInfo.user_address,
@@ -111,9 +111,9 @@ export class DexConsole {
         new BigNumber(userInfo.amount),
         chainInfo.max_block,
       );
-    });
+    }
 
-    const userInfosProcessReward = userInfos.map(async (userInfo) => {
+    for (const userInfo of userInfos) {
       await this.dexService.updateLPRewards(
         userInfo.pool_id,
         userInfo.user_address,
@@ -121,9 +121,7 @@ export class DexConsole {
         new BigNumber(userInfo.amount),
         chainInfo.max_block,
       );
-    });
-    await Promise.all(userInfosProcessScore);
-    await Promise.all(userInfosProcessReward);
+    }
   }
 
   @Command({
