@@ -176,9 +176,6 @@ export class DexService {
   }
 
   async claim(userAddress: string): Promise<UserInfoEntity[]> {
-    if (!(await this.updateDataBeforeClaim(userAddress))) {
-      throw new HttpException('User is invalid', 400);
-    }
     const matcherAddress = getConfig().get<string>('matcher_address');
     const chainId = getConfig().get<number>('chain_id');
     const gasPrice = this.web3.utils.toBN(await this.web3.eth.getGasPrice());
