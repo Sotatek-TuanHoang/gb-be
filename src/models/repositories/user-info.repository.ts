@@ -1,4 +1,4 @@
-import { EntityRepository, In, Repository } from 'typeorm';
+import { EntityRepository, Repository } from 'typeorm';
 import {
   UserInfoEntity,
   UserInfoStatus,
@@ -24,7 +24,7 @@ export class UserInfoRepository extends Repository<UserInfoEntity> {
     return await this.find({
       where: {
         user_address: userAddress,
-        status: In([UserInfoStatus.Pending, UserInfoStatus.End]),
+        status: UserInfoStatus.End,
       },
     });
   }
