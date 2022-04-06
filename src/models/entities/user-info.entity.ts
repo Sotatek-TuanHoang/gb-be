@@ -71,6 +71,7 @@ export class UserInfoEntity {
 
 export enum UserInfoStatus {
   Pending = 'pending',
+  End = 'end',
   Claim = 'claim',
   Complete = 'complete',
   Failed = 'failed',

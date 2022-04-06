@@ -146,6 +146,10 @@ export class DexService {
       .minus(poolInfo.start_block)
       .toString();
 
+    if (maxBlock.max_block === blockNumber) {
+      userInfo.status = UserInfoStatus.End;
+    }
+
     await this.poolInfoRepo.save(poolInfo);
     return await this.userInfoRepo.save(userInfo);
   }
